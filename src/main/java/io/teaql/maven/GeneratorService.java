@@ -6,16 +6,17 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.entity.mime.content.FileBody;
-import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.apache.maven.plugin.logging.Log;
+import org.yaml.snakeyaml.Yaml;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -35,6 +36,10 @@ import java.util.zip.ZipOutputStream;
  */
 public class GeneratorService {
 
+    /** Fields suppressed when printing the default license banner. */
+    private static final Set<String> SUPPRESSED_LICENSE_FIELDS =
+            new HashSet<>(Arrays.asList("PUBLIC KEY", "SIGNATURE"));
+
     private final Log log;
 
     public GeneratorService(Log log) {
@@ -50,37 +55,42 @@ public class GeneratorService {
      * @param config resolved configuration
      */
     public void generate(File input, String scope, ResolvedConfig config) throws Exception {
-        // 1. Validate inputs
+        // 1. Validate input
         if (!input.exists()) {
             throw new IllegalArgumentException("input does not exist: " + input.getAbsolutePath());
         }
 
-        // Resolve license: if it points to the placeholder, extract from classpath
-        File licenseFile = resolveLicenseFile(config.getLicenseFile());
+        // 2. Resolve license (may extract bundled resource to temp file)
+        ResolvedLicense license = resolveLicenseFile(config.getLicenseFile());
 
-        // 2. Create build dir
+        // 3. If using the default bundled license, print info + fair-use notice
+        if (license.isDefault) {
+            printDefaultLicenseInfo(license.file);
+        }
+
+        // 4. Create build dir
         Files.createDirectories(config.getBuildDir().toPath());
 
-        // 3. Prepare upload (zip directory if needed)
+        // 5. Prepare upload (zip directory if needed)
         File uploadFile = prepareUpload(input);
 
         try {
-            // 4. Call remote service
+            // 6. Call remote service
             log.info("using " + config.getServiceUrl());
-            byte[] zipBytes = requestGeneration(uploadFile, scope, licenseFile, config);
+            byte[] zipBytes = requestGeneration(uploadFile, scope, license.file, config);
 
-            // 5. Write archive
+            // 7. Write archive
             File archivePath = new File(config.getBuildDir(), "domain.zip");
             Files.write(archivePath.toPath(), zipBytes);
 
-            // 6. Extract
+            // 8. Extract
             extractZip(zipBytes, config.getBuildDir());
 
-            // 7. Check for error.txt
+            // 9. Check for error.txt
             File errorFile = new File(config.getBuildDir(), "error.txt");
             if (errorFile.exists()) {
-                String errorContent = new String(Files.readAllBytes(errorFile.toPath()),
-                        StandardCharsets.UTF_8).trim();
+                String errorContent = new String(
+                        Files.readAllBytes(errorFile.toPath()), StandardCharsets.UTF_8).trim();
                 throw new RuntimeException("TeaQL service error: " + errorContent);
             }
 
@@ -91,6 +101,53 @@ public class GeneratorService {
             if (uploadFile != input) {
                 uploadFile.delete();
             }
+            // Clean up extracted bundled license temp file
+            if (license.isDefault) {
+                license.file.delete();
+            }
+        }
+    }
+
+    // ── default license info ─────────────────────────────────────────────────
+
+    /**
+     * Parse the default license JSON and print all user-visible fields,
+     * then emit a fair-use reminder.
+     */
+    @SuppressWarnings("unchecked")
+    private void printDefaultLicenseInfo(File licenseFile) {
+        try {
+            String content = new String(Files.readAllBytes(licenseFile.toPath()),
+                    StandardCharsets.UTF_8);
+            // SnakeYAML parses JSON natively (JSON is valid YAML)
+            Yaml yaml = new Yaml();
+            Map<String, Object> fields = yaml.load(content);
+
+            StringBuilder sb = new StringBuilder();
+            sb.append("\n");
+            sb.append("┌─────────────────────────────────────────────────┐\n");
+            sb.append("│              TeaQL License (default)            │\n");
+            sb.append("├─────────────────────────────────────────────────┤\n");
+            if (fields != null) {
+                for (Map.Entry<String, Object> entry : fields.entrySet()) {
+                    if (SUPPRESSED_LICENSE_FIELDS.contains(entry.getKey())) {
+                        continue;
+                    }
+                    sb.append(String.format("│  %-18s : %-27s│\n",
+                            entry.getKey(), String.valueOf(entry.getValue())));
+                }
+            }
+            sb.append("├─────────────────────────────────────────────────┤\n");
+            sb.append("│  ⚠  Fair Use Notice                             │\n");
+            sb.append("│  You are using the public free-tier license.    │\n");
+            sb.append("│  Configure a personal license via:              │\n");
+            sb.append("│    ~/.teaql/config.yml  →  license_file: ...    │\n");
+            sb.append("│  or pass  -Dteaql.licenseFile=<path>            │\n");
+            sb.append("└─────────────────────────────────────────────────┘\n");
+
+            log.warn(sb.toString());
+        } catch (Exception e) {
+            log.warn("could not read default license file: " + e.getMessage());
         }
     }
 
@@ -127,7 +184,8 @@ public class GeneratorService {
             builder.addPart("file", new FileBody(uploadFile));
             builder.addPart("licenseFile", new FileBody(licenseFile));
             if (scope != null) {
-                builder.addTextBody("scope", scope, org.apache.http.entity.ContentType.TEXT_PLAIN);
+                builder.addTextBody("scope", scope,
+                        org.apache.http.entity.ContentType.TEXT_PLAIN);
             }
 
             post.setEntity(builder.build());
@@ -213,13 +271,17 @@ public class GeneratorService {
     // ── license resolution ───────────────────────────────────────────────────
 
     /**
-     * If the configured license path is the internal placeholder, extract the bundled
-     * {@code public.LICENSE} from the plugin's own jar into a temp file.
+     * Resolves the license file to use.
+     *
+     * <ul>
+     *   <li>If the configured path exists on disk → use it directly ({@code isDefault=false}).</li>
+     *   <li>Otherwise → extract the bundled classpath resource to a temp file
+     *       ({@code isDefault=true}).</li>
+     * </ul>
      */
-    private File resolveLicenseFile(File configured) throws IOException {
-        // If file exists on disk, use it directly
+    private ResolvedLicense resolveLicenseFile(File configured) throws IOException {
         if (configured != null && configured.exists()) {
-            return configured;
+            return new ResolvedLicense(configured, false);
         }
 
         // Fall back to bundled classpath resource
@@ -230,7 +292,7 @@ public class GeneratorService {
                     + "and configured license file does not exist: " + configured);
         }
         File temp = File.createTempFile("teaql-license-", ".LICENSE");
-        temp.deleteOnExit();
+        // Do NOT deleteOnExit here — we delete it ourselves in the finally block of generate()
         try (InputStream in = resource;
              OutputStream out = new FileOutputStream(temp)) {
             byte[] buf = new byte[4096];
@@ -239,6 +301,18 @@ public class GeneratorService {
                 out.write(buf, 0, n);
             }
         }
-        return temp;
+        return new ResolvedLicense(temp, true);
+    }
+
+    // ── inner types ──────────────────────────────────────────────────────────
+
+    private static final class ResolvedLicense {
+        final File file;
+        final boolean isDefault;
+
+        ResolvedLicense(File file, boolean isDefault) {
+            this.file = file;
+            this.isDefault = isDefault;
+        }
     }
 }
