@@ -1,0 +1,84 @@
+package io.teaql.maven;
+
+import org.apache.maven.plugin.AbstractMojo;
+import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.project.MavenProject;
+
+import java.io.File;
+import java.io.IOException;
+
+/**
+ * Base Mojo for all TeaQL generation goals.
+ *
+ * <p>Handles configuration loading and resolution, then delegates to
+ * {@link GeneratorService} with a goal-specific {@code scope}.
+ */
+public abstract class AbstractGenerateMojo extends AbstractMojo {
+
+    /** Model file or directory to upload. */
+    @Parameter(property = "teaql.input", required = true)
+    protected File input;
+
+    /** Override the TeaQL service URL. */
+    @Parameter(property = "teaql.serviceUrl")
+    protected String serviceUrl;
+
+    /** Override the license file path. */
+    @Parameter(property = "teaql.licenseFile")
+    protected String licenseFile;
+
+    /** Override the output (build) directory. */
+    @Parameter(property = "teaql.output",
+               defaultValue = "${project.basedir}/build")
+    protected String output;
+
+    /** Override the request timeout in seconds. */
+    @Parameter(property = "teaql.timeoutSeconds", defaultValue = "0")
+    protected long timeoutSeconds;
+
+    /** Injected Maven project, used to resolve the basedir. */
+    @Parameter(defaultValue = "${project}", readonly = true, required = true)
+    protected MavenProject project;
+
+    /**
+     * Returns the {@code scope} parameter for the remote service.
+     *
+     * <ul>
+     *   <li>{@code null}        → gen-code (backend/domain code)</li>
+     *   <li>{@code "doc"}       → gen-doc</li>
+     *   <li>{@code "frontend"}  → gen-model</li>
+     * </ul>
+     */
+    protected abstract String getScope();
+
+    @Override
+    public void execute() throws MojoExecutionException, MojoFailureException {
+        TeaqlConfig fileConfig;
+        try {
+            fileConfig = TeaqlConfig.load();
+        } catch (IOException e) {
+            throw new MojoExecutionException("failed to load TeaQL config", e);
+        }
+
+        ConfigOverrides overrides = new ConfigOverrides(
+                serviceUrl,
+                licenseFile,
+                output,
+                timeoutSeconds
+        );
+
+        File cwd = project.getBasedir();
+        ResolvedConfig resolved = fileConfig.resolve(overrides, cwd);
+
+        getLog().debug("resolved config: " + resolved);
+
+        GeneratorService service = new GeneratorService(getLog());
+        try {
+            service.generate(input, getScope(), resolved);
+        } catch (Exception e) {
+            throw new MojoExecutionException("TeaQL generation failed: " + e.getMessage(), e);
+        }
+    }
+}
