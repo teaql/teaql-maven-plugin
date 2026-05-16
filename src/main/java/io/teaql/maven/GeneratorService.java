@@ -74,6 +74,8 @@ public class GeneratorService {
         // 5. Prepare upload (zip directory if needed)
         File uploadFile = prepareUpload(input);
 
+        log.info("model input: " + input.getAbsolutePath());
+
         try {
             // 6. Call remote service
             log.info("using " + config.getServiceUrl());
