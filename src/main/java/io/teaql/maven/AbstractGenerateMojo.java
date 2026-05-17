@@ -38,8 +38,8 @@ public abstract class AbstractGenerateMojo extends AbstractMojo {
     @Parameter(property = "teaql.timeoutSeconds", defaultValue = "0")
     protected long timeoutSeconds;
 
-    /** Injected Maven project, used to resolve the basedir. */
-    @Parameter(defaultValue = "${project}", readonly = true, required = true)
+    /** Injected Maven project, used to resolve the basedir. Optional — falls back to user.dir. */
+    @Parameter(defaultValue = "${project}", readonly = true, required = false)
     protected MavenProject project;
 
     /**
@@ -69,7 +69,8 @@ public abstract class AbstractGenerateMojo extends AbstractMojo {
                 timeoutSeconds
         );
 
-        File cwd = project.getBasedir();
+        File cwd = (project != null) ? project.getBasedir()
+                : new File(System.getProperty("user.dir"));
         ResolvedConfig resolved = fileConfig.resolve(overrides, cwd);
 
         getLog().debug("resolved config: " + resolved);

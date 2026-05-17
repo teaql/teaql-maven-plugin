@@ -30,7 +30,7 @@ import org.apache.maven.plugins.annotations.Mojo;
  */
 @Mojo(name = "gen-code",
       defaultPhase = LifecyclePhase.GENERATE_SOURCES,
-      requiresProject = true,
+      requiresProject = false,
       threadSafe = true)
 public class GenCodeMojo extends AbstractGenerateMojo {
 

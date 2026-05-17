@@ -12,7 +12,7 @@ import org.apache.maven.plugins.annotations.Mojo;
  */
 @Mojo(name = "gen-doc",
       defaultPhase = LifecyclePhase.GENERATE_SOURCES,
-      requiresProject = true,
+      requiresProject = false,
       threadSafe = true)
 public class GenDocMojo extends AbstractGenerateMojo {
 
