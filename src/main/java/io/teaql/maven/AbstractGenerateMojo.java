@@ -75,6 +75,9 @@ public abstract class AbstractGenerateMojo extends AbstractMojo {
 
         getLog().debug("resolved config: " + resolved);
 
+        // Print where each config value came from
+        getLog().info(resolved.describeSources());
+
         GeneratorService service = new GeneratorService(getLog());
         try {
             service.generate(input, getScope(), resolved);

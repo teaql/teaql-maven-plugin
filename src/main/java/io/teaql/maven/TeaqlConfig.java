@@ -96,36 +96,84 @@ public class TeaqlConfig {
     /**
      * Applies Mojo-level parameter overrides and resolves all paths relative to {@code cwd}.
      *
+     * <p>Precedence (highest wins): Mojo parameter / env var → config file → built-in default.
+     *
      * @param overrides  parameter overrides from the Mojo (any field may be null/0 = no override)
      * @param cwd        the Maven project's base directory
      * @return a fully-resolved, ready-to-use config
      */
     public ResolvedConfig resolve(ConfigOverrides overrides, File cwd) {
-        String resolvedServiceUrl = overrides.getServiceUrl() != null
-                ? overrides.getServiceUrl()
-                : serviceUrl;
+        // ── service_url: mojo/env > config.yml > default ──
+        String resolvedServiceUrl;
+        String serviceUrlSource;
+        String envServiceUrl = System.getenv("TEAQL_SERVICE_URL");
+        if (overrides.getServiceUrl() != null) {
+            resolvedServiceUrl = overrides.getServiceUrl();
+            serviceUrlSource = "mojo parameter (-Dteaql.serviceUrl)";
+        } else if (envServiceUrl != null && !envServiceUrl.isBlank()) {
+            resolvedServiceUrl = envServiceUrl;
+            serviceUrlSource = "env TEAQL_SERVICE_URL";
+        } else {
+            resolvedServiceUrl = serviceUrl;
+            serviceUrlSource = "~/.teaql/config.yml (or built-in default)";
+        }
 
-        String rawBuildDir = overrides.getBuildDir() != null
-                ? overrides.getBuildDir()
-                : buildDir;
-        File resolvedBuildDir = normalizePath(rawBuildDir, cwd);
-
-        long resolvedTimeout = overrides.getTimeoutSeconds() > 0
-                ? overrides.getTimeoutSeconds()
-                : timeoutSeconds;
-
-        // license file: override → config → bundled default
+        // ── license_file: mojo/env > config.yml > default ──
         File resolvedLicenseFile;
+        String licenseSource;
+        String envLicense = System.getenv("TEAQL_LICENSE_FILE");
         if (overrides.getLicenseFile() != null) {
             resolvedLicenseFile = normalizePath(overrides.getLicenseFile(), cwd);
+            licenseSource = "mojo parameter (-Dteaql.licenseFile)";
+        } else if (envLicense != null && !envLicense.isBlank()) {
+            resolvedLicenseFile = normalizePath(envLicense, cwd);
+            licenseSource = "env TEAQL_LICENSE_FILE";
         } else if (licenseFile != null) {
             resolvedLicenseFile = normalizePath(licenseFile, cwd);
+            licenseSource = "~/.teaql/config.yml";
         } else {
             resolvedLicenseFile = defaultLicensePath();
+            licenseSource = "built-in default";
+        }
+
+        // ── build_dir: mojo/env > config.yml > default ──
+        String rawBuildDir;
+        String buildDirSource;
+        String envBuildDir = System.getenv("TEAQL_BUILD_DIR");
+        if (overrides.getBuildDir() != null) {
+            rawBuildDir = overrides.getBuildDir();
+            buildDirSource = "mojo parameter (-Dteaql.output)";
+        } else if (envBuildDir != null && !envBuildDir.isBlank()) {
+            rawBuildDir = envBuildDir;
+            buildDirSource = "env TEAQL_BUILD_DIR";
+        } else {
+            rawBuildDir = buildDir;
+            buildDirSource = "~/.teaql/config.yml (or built-in default)";
+        }
+        File resolvedBuildDir = normalizePath(rawBuildDir, cwd);
+
+        // ── timeout_seconds: mojo/env > config.yml > default ──
+        long resolvedTimeout;
+        String timeoutSource;
+        String envTimeout = System.getenv("TEAQL_TIMEOUT_SECONDS");
+        long envTimeoutVal = 0;
+        if (envTimeout != null && !envTimeout.isBlank()) {
+            try { envTimeoutVal = Long.parseLong(envTimeout); } catch (NumberFormatException ignored) {}
+        }
+        if (overrides.getTimeoutSeconds() > 0) {
+            resolvedTimeout = overrides.getTimeoutSeconds();
+            timeoutSource = "mojo parameter (-Dteaql.timeoutSeconds)";
+        } else if (envTimeoutVal > 0) {
+            resolvedTimeout = envTimeoutVal;
+            timeoutSource = "env TEAQL_TIMEOUT_SECONDS";
+        } else {
+            resolvedTimeout = timeoutSeconds;
+            timeoutSource = "~/.teaql/config.yml (or built-in default)";
         }
 
         return new ResolvedConfig(resolvedServiceUrl, resolvedLicenseFile,
-                resolvedBuildDir, resolvedTimeout);
+                resolvedBuildDir, resolvedTimeout,
+                serviceUrlSource, licenseSource, buildDirSource, timeoutSource);
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────
