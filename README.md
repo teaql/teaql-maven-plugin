@@ -38,30 +38,48 @@ mvn teaql:gen-model -Dteaql.input=src/main/model
 mvn teaql:show-config
 ```
 
-## Parameters
+## Configuration
 
-All parameters can be set via `<configuration>` or `-D` system properties.
+### Precedence (highest wins)
 
-| Parameter | Property | Default | Description |
-|---|---|---|---|
-| `input` | `teaql.input` | _(required)_ | Model file or directory to upload |
-| `serviceUrl` | `teaql.serviceUrl` | from config file | Override service URL |
-| `licenseFile` | `teaql.licenseFile` | bundled `public.LICENSE` | Override license file |
-| `output` | `teaql.output` | `${project.basedir}/build` | Output directory |
-| `timeoutSeconds` | `teaql.timeoutSeconds` | `300` | HTTP timeout |
+```
+Mojo parameter / -D flag  >  Environment variable  >  config.yml  >  Built-in default
+```
 
-## Config file
+### Parameters
+
+All parameters can be set via `<configuration>`, `-D` system properties, or environment variables.
+
+| Parameter | Property | Env var | Default | Description |
+|---|---|---|---|---|
+| `input` | `teaql.input` | — | _(required)_ | Model file or directory to upload |
+| `serviceUrl` | `teaql.serviceUrl` | `TEAQL_SERVICE_URL` | `https://api.teaql.io/latest/` | Service endpoint URL |
+| `licenseFile` | `teaql.licenseFile` | `TEAQL_LICENSE_FILE` | bundled `public.LICENSE` | License file path |
+| `output` | `teaql.output` | `TEAQL_BUILD_DIR` | `${project.basedir}/build` | Output directory |
+| `timeoutSeconds` | `teaql.timeoutSeconds` | `TEAQL_TIMEOUT_SECONDS` | `300` | HTTP timeout in seconds |
+
+### Config file
 
 Local config lives in `~/.teaql/config.yml`:
 
 ```yaml
-service_url: http://springboot.teaql-gen-code.1496855407387739.cn-chengdu.fc.devsapp.net/generate
+service_url: https://api.teaql.io/latest/
 license_file: /path/to/your.LICENSE   # optional — bundled public.LICENSE used if omitted
 build_dir: build
 timeout_seconds: 300
 ```
 
-Plugin parameters override the config file. Config file overrides built-in defaults.
+### Source tracking
+
+At startup, the plugin logs where each effective config value came from:
+
+```
+[INFO]   config (precedence: mojo/env > config.yml > default):
+[INFO]     service_url     = https://api.teaql.io/latest/  (from: ~/.teaql/config.yml (or built-in default))
+[INFO]     license_file    = /home/user/.teaql/license       (from: env TEAQL_LICENSE_FILE)
+[INFO]     build_dir       = /workspace/project/build        (from: mojo parameter (-Dteaql.output))
+[INFO]     timeout_seconds = 300                             (from: ~/.teaql/config.yml (or built-in default))
+```
 
 ## Build
 
