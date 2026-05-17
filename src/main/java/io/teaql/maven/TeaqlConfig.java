@@ -21,7 +21,7 @@ import java.util.Map;
 public class TeaqlConfig {
 
     public static final String DEFAULT_SERVICE_URL =
-            "http://springboot.teaql-gen-code.1496855407387739.cn-chengdu.fc.devsapp.net/generate";
+            "https://api.teaql.io/latest/";
     public static final String DEFAULT_BUILD_DIR = "build";
     public static final long DEFAULT_TIMEOUT_SECONDS = 300L;
 
