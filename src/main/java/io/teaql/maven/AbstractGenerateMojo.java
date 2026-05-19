@@ -21,7 +21,12 @@ public abstract class AbstractGenerateMojo extends AbstractMojo {
     @Parameter(property = "teaql.input", required = true)
     protected File input;
 
-    /** Override the TeaQL service URL. */
+    /** Override the TeaQL endpoint prefix, e.g. {@code https://api.teaql.io/latest/}. */
+    @Parameter(property = "teaql.endpointPrefix")
+    protected String endpointPrefix;
+
+    /** Override the TeaQL service URL. @deprecated use {@code teaql.endpointPrefix}. */
+    @Deprecated
     @Parameter(property = "teaql.serviceUrl")
     protected String serviceUrl;
 
@@ -63,6 +68,7 @@ public abstract class AbstractGenerateMojo extends AbstractMojo {
         }
 
         ConfigOverrides overrides = new ConfigOverrides(
+                endpointPrefix,
                 serviceUrl,
                 licenseFile,
                 output,

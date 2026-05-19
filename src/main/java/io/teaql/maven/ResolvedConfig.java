@@ -10,31 +10,36 @@ import java.io.File;
  */
 public class ResolvedConfig {
 
-    private final String serviceUrl;
+    private final String endpointPrefix;
     private final File licenseFile;
     private final File buildDir;
     private final long timeoutSeconds;
 
-    private final String serviceUrlSource;
+    private final String endpointPrefixSource;
     private final String licenseSource;
     private final String buildDirSource;
     private final String timeoutSource;
 
-    public ResolvedConfig(String serviceUrl, File licenseFile,
+    public ResolvedConfig(String endpointPrefix, File licenseFile,
                           File buildDir, long timeoutSeconds,
-                          String serviceUrlSource, String licenseSource,
+                          String endpointPrefixSource, String licenseSource,
                           String buildDirSource, String timeoutSource) {
-        this.serviceUrl = serviceUrl;
+        this.endpointPrefix = endpointPrefix;
         this.licenseFile = licenseFile;
         this.buildDir = buildDir;
         this.timeoutSeconds = timeoutSeconds;
-        this.serviceUrlSource = serviceUrlSource;
+        this.endpointPrefixSource = endpointPrefixSource;
         this.licenseSource = licenseSource;
         this.buildDirSource = buildDirSource;
         this.timeoutSource = timeoutSource;
     }
 
-    public String getServiceUrl() { return serviceUrl; }
+    public String getEndpointPrefix() { return endpointPrefix; }
+
+    /** @deprecated use {@link #getEndpointPrefix()} */
+    @Deprecated
+    public String getServiceUrl() { return endpointPrefix; }
+
     public File getLicenseFile() { return licenseFile; }
     public File getBuildDir() { return buildDir; }
     public long getTimeoutSeconds() { return timeoutSeconds; }
@@ -45,17 +50,17 @@ public class ResolvedConfig {
      */
     public String describeSources() {
         return "\n" +
-            "  config (precedence: mojo/env > config.yml > default):\n" +
-            "    service_url     = " + serviceUrl + "  (from: " + serviceUrlSource + ")\n" +
-            "    license_file    = " + licenseFile + "  (from: " + licenseSource + ")\n" +
-            "    build_dir       = " + buildDir + "  (from: " + buildDirSource + ")\n" +
-            "    timeout_seconds = " + timeoutSeconds + "  (from: " + timeoutSource + ")\n";
+            "  config (precedence: mojo > env > config.yml > default):\n" +
+            "    endpoint_prefix  = " + endpointPrefix + "  (from: " + endpointPrefixSource + ")\n" +
+            "    license_file     = " + licenseFile + "  (from: " + licenseSource + ")\n" +
+            "    build_dir        = " + buildDir + "  (from: " + buildDirSource + ")\n" +
+            "    timeout_seconds  = " + timeoutSeconds + "  (from: " + timeoutSource + ")\n";
     }
 
     @Override
     public String toString() {
         return "ResolvedConfig{" +
-                "serviceUrl='" + serviceUrl + '\'' +
+                "endpointPrefix='" + endpointPrefix + '\'' +
                 ", licenseFile=" + licenseFile +
                 ", buildDir=" + buildDir +
                 ", timeoutSeconds=" + timeoutSeconds +

@@ -2,30 +2,33 @@ package io.teaql.maven;
 
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
-import org.yaml.snakeyaml.representer.Representer;
 
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * TeaQL local configuration, mirroring ~/.teaql/config.yml.
+ * TeaQL local configuration, mirroring {@code ~/.teaql/config.yml}.
  *
- * <p>Precedence (highest wins): Mojo parameter overrides → config file → built-in defaults.
+ * <p>Precedence (highest wins): Mojo parameter overrides → environment variables
+ * → config file → built-in defaults.
+ *
+ * <p>The config file accepts both {@code endpoint_prefix} (preferred) and
+ * the legacy {@code service_url} key for backwards compatibility.
  */
 public class TeaqlConfig {
 
-    public static final String DEFAULT_SERVICE_URL =
+    public static final String DEFAULT_ENDPOINT_PREFIX =
             "https://api.teaql.io/latest/";
     public static final String DEFAULT_BUILD_DIR = "build";
     public static final long DEFAULT_TIMEOUT_SECONDS = 300L;
 
-    private String serviceUrl = DEFAULT_SERVICE_URL;
+    /** Stored as the raw value from config file; normalised during {@link #resolve}. */
+    private String endpointPrefix = DEFAULT_ENDPOINT_PREFIX;
     private String licenseFile;          // null → fall back to bundled public.LICENSE
     private String buildDir = DEFAULT_BUILD_DIR;
     private long timeoutSeconds = DEFAULT_TIMEOUT_SECONDS;
@@ -39,6 +42,7 @@ public class TeaqlConfig {
     /**
      * Loads config from {@code ~/.teaql/config.yml}.
      * Returns defaults if the file does not exist.
+     * Accepts both {@code endpoint_prefix} and legacy {@code service_url}.
      */
     public static TeaqlConfig load() throws IOException {
         File configFile = configFilePath();
@@ -53,8 +57,11 @@ public class TeaqlConfig {
                 return new TeaqlConfig();
             }
             TeaqlConfig cfg = new TeaqlConfig();
-            if (data.containsKey("service_url") && data.get("service_url") != null) {
-                cfg.serviceUrl = data.get("service_url").toString();
+            // endpoint_prefix preferred; fall back to legacy service_url
+            if (data.containsKey("endpoint_prefix") && data.get("endpoint_prefix") != null) {
+                cfg.endpointPrefix = data.get("endpoint_prefix").toString();
+            } else if (data.containsKey("service_url") && data.get("service_url") != null) {
+                cfg.endpointPrefix = data.get("service_url").toString();
             }
             if (data.containsKey("license_file") && data.get("license_file") != null) {
                 cfg.licenseFile = data.get("license_file").toString();
@@ -77,7 +84,7 @@ public class TeaqlConfig {
         configFile.getParentFile().mkdirs();
 
         Map<String, Object> data = new LinkedHashMap<>();
-        data.put("service_url", serviceUrl);
+        data.put("endpoint_prefix", endpointPrefix);
         if (licenseFile != null) {
             data.put("license_file", licenseFile);
         }
@@ -94,28 +101,47 @@ public class TeaqlConfig {
     }
 
     /**
-     * Applies Mojo-level parameter overrides and resolves all paths relative to {@code cwd}.
+     * Applies Mojo-level parameter overrides, environment variables, and resolves all
+     * paths relative to {@code cwd}.
      *
-     * <p>Precedence (highest wins): Mojo parameter / env var → config file → built-in default.
+     * <p>Precedence (highest wins):
+     * CLI/Mojo parameter → environment variable → config file → built-in default.
      *
-     * @param overrides  parameter overrides from the Mojo (any field may be null/0 = no override)
-     * @param cwd        the Maven project's base directory
+     * <p>Supported environment variables:
+     * <ul>
+     *   <li>{@code TEAQL_ENDPOINT_PREFIX} – endpoint prefix (preferred)</li>
+     *   <li>{@code TEAQL_SERVICE_URL} – legacy alias for endpoint prefix</li>
+     *   <li>{@code TEAQL_LICENSE_FILE}</li>
+     *   <li>{@code TEAQL_BUILD_DIR}</li>
+     *   <li>{@code TEAQL_TIMEOUT_SECONDS}</li>
+     * </ul>
+     *
+     * @param overrides parameter overrides from the Mojo (any field may be null/0 = no override)
+     * @param cwd       the Maven project's base directory
      * @return a fully-resolved, ready-to-use config
      */
     public ResolvedConfig resolve(ConfigOverrides overrides, File cwd) {
-        // ── service_url: mojo/env > config.yml > default ──
-        String resolvedServiceUrl;
-        String serviceUrlSource;
+        // ── endpoint_prefix: mojo/env > config.yml > default ──
+        String resolvedEndpointPrefix;
+        String endpointPrefixSource;
+        String envEndpointPrefix = System.getenv("TEAQL_ENDPOINT_PREFIX");
         String envServiceUrl = System.getenv("TEAQL_SERVICE_URL");
-        if (overrides.getServiceUrl() != null) {
-            resolvedServiceUrl = overrides.getServiceUrl();
-            serviceUrlSource = "mojo parameter (-Dteaql.serviceUrl)";
+
+        if (overrides.getEndpointPrefix() != null) {
+            resolvedEndpointPrefix = normalizeEndpointPrefix(overrides.getEndpointPrefix());
+            endpointPrefixSource = "mojo parameter (-Dteaql.endpointPrefix)";
+        } else if (overrides.getServiceUrl() != null) {
+            resolvedEndpointPrefix = normalizeEndpointPrefix(overrides.getServiceUrl());
+            endpointPrefixSource = "mojo parameter (-Dteaql.serviceUrl, deprecated)";
+        } else if (envEndpointPrefix != null && !envEndpointPrefix.isBlank()) {
+            resolvedEndpointPrefix = normalizeEndpointPrefix(envEndpointPrefix);
+            endpointPrefixSource = "env TEAQL_ENDPOINT_PREFIX";
         } else if (envServiceUrl != null && !envServiceUrl.isBlank()) {
-            resolvedServiceUrl = envServiceUrl;
-            serviceUrlSource = "env TEAQL_SERVICE_URL";
+            resolvedEndpointPrefix = normalizeEndpointPrefix(envServiceUrl);
+            endpointPrefixSource = "env TEAQL_SERVICE_URL (deprecated)";
         } else {
-            resolvedServiceUrl = serviceUrl;
-            serviceUrlSource = "~/.teaql/config.yml (or built-in default)";
+            resolvedEndpointPrefix = normalizeEndpointPrefix(endpointPrefix);
+            endpointPrefixSource = "~/.teaql/config.yml (or built-in default)";
         }
 
         // ── license_file: mojo/env > config.yml > default ──
@@ -171,9 +197,9 @@ public class TeaqlConfig {
             timeoutSource = "~/.teaql/config.yml (or built-in default)";
         }
 
-        return new ResolvedConfig(resolvedServiceUrl, resolvedLicenseFile,
+        return new ResolvedConfig(resolvedEndpointPrefix, resolvedLicenseFile,
                 resolvedBuildDir, resolvedTimeout,
-                serviceUrlSource, licenseSource, buildDirSource, timeoutSource);
+                endpointPrefixSource, licenseSource, buildDirSource, timeoutSource);
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────
@@ -187,11 +213,35 @@ public class TeaqlConfig {
     }
 
     /**
+     * Ensures the endpoint prefix always ends with {@code /}.
+     * Mirrors {@code normalize_endpoint_prefix()} in the Rust CLI.
+     */
+    public static String normalizeEndpointPrefix(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return DEFAULT_ENDPOINT_PREFIX;
+        }
+        return raw.endsWith("/") ? raw : raw + "/";
+    }
+
+    /**
+     * Builds a full URL from an endpoint prefix and a method path.
+     * Mirrors {@code endpoint_url()} in {@code service.rs}.
+     *
+     * <p>Example: {@code endpointUrl("https://api.teaql.io/latest/", "generate")}
+     * → {@code "https://api.teaql.io/latest/generate"}
+     */
+    public static String endpointUrl(String endpointPrefix, String method) {
+        String prefix = endpointPrefix.endsWith("/") ? endpointPrefix
+                : endpointPrefix + "/";
+        String m = method.startsWith("/") ? method.substring(1) : method;
+        return prefix + m;
+    }
+
+    /**
      * Path to the bundled {@code public.LICENSE} that ships inside the plugin jar.
      * At runtime, this file is extracted to a temp location by {@link GeneratorService}.
      */
     public static File defaultLicensePath() {
-        // Resolved at runtime via classpath; this placeholder is overridden in GeneratorService.
         return new File("assets/public.LICENSE");
     }
 
@@ -208,8 +258,15 @@ public class TeaqlConfig {
 
     // ── getters / setters ───────────────────────────────────────────────────
 
-    public String getServiceUrl() { return serviceUrl; }
-    public void setServiceUrl(String serviceUrl) { this.serviceUrl = serviceUrl; }
+    public String getEndpointPrefix() { return endpointPrefix; }
+    public void setEndpointPrefix(String endpointPrefix) { this.endpointPrefix = endpointPrefix; }
+
+    /** @deprecated use {@link #getEndpointPrefix()} */
+    @Deprecated
+    public String getServiceUrl() { return endpointPrefix; }
+    /** @deprecated use {@link #setEndpointPrefix(String)} */
+    @Deprecated
+    public void setServiceUrl(String serviceUrl) { this.endpointPrefix = serviceUrl; }
 
     public String getLicenseFile() { return licenseFile; }
     public void setLicenseFile(String licenseFile) { this.licenseFile = licenseFile; }
@@ -223,7 +280,7 @@ public class TeaqlConfig {
     @Override
     public String toString() {
         return "TeaqlConfig{" +
-                "serviceUrl='" + serviceUrl + '\'' +
+                "endpointPrefix='" + endpointPrefix + '\'' +
                 ", licenseFile='" + licenseFile + '\'' +
                 ", buildDir='" + buildDir + '\'' +
                 ", timeoutSeconds=" + timeoutSeconds +

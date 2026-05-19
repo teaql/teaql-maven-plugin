@@ -8,6 +8,10 @@ package io.teaql.maven;
  */
 public class ConfigOverrides {
 
+    /** TeaQL endpoint prefix, e.g. {@code https://api.teaql.io/latest/}. Preferred. */
+    private String endpointPrefix;
+    /** @deprecated use {@link #endpointPrefix}. Kept for backward compatibility. */
+    @Deprecated
     private String serviceUrl;
     private String licenseFile;
     private String buildDir;
@@ -15,15 +19,23 @@ public class ConfigOverrides {
 
     public ConfigOverrides() {}
 
-    public ConfigOverrides(String serviceUrl, String licenseFile,
-                           String buildDir, long timeoutSeconds) {
+    public ConfigOverrides(String endpointPrefix, String serviceUrl,
+                           String licenseFile, String buildDir, long timeoutSeconds) {
+        this.endpointPrefix = endpointPrefix;
         this.serviceUrl = serviceUrl;
         this.licenseFile = licenseFile;
         this.buildDir = buildDir;
         this.timeoutSeconds = timeoutSeconds;
     }
 
+    public String getEndpointPrefix() { return endpointPrefix; }
+    public void setEndpointPrefix(String endpointPrefix) { this.endpointPrefix = endpointPrefix; }
+
+    /** @deprecated use {@link #getEndpointPrefix()} */
+    @Deprecated
     public String getServiceUrl() { return serviceUrl; }
+    /** @deprecated use {@link #setEndpointPrefix(String)} */
+    @Deprecated
     public void setServiceUrl(String serviceUrl) { this.serviceUrl = serviceUrl; }
 
     public String getLicenseFile() { return licenseFile; }

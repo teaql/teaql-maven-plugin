@@ -78,7 +78,7 @@ public class GeneratorService {
 
         try {
             // 6. Call remote service
-            log.info("using " + config.getServiceUrl());
+            log.info("using " + TeaQLService.endpointUrl(config.getEndpointPrefix(), "generate"));
             byte[] zipBytes = requestGeneration(uploadFile, scope, license.file, config);
 
             // 7. Write archive
@@ -180,7 +180,7 @@ public class GeneratorService {
                 .setDefaultRequestConfig(requestConfig)
                 .build()) {
 
-            HttpPost post = new HttpPost(config.getServiceUrl());
+            HttpPost post = new HttpPost(TeaQLService.endpointUrl(config.getEndpointPrefix(), "generate"));
 
             MultipartEntityBuilder builder = MultipartEntityBuilder.create();
             builder.addPart("file", new FileBody(uploadFile));
@@ -198,7 +198,7 @@ public class GeneratorService {
                 byte[] body = EntityUtils.toByteArray(entity);
                 if (statusCode < 200 || statusCode >= 300) {
                     throw new IOException("service returned HTTP " + statusCode
-                            + " for " + config.getServiceUrl());
+                            + " for " + TeaQLService.endpointUrl(config.getEndpointPrefix(), "generate"));
                 }
                 return body;
             }
