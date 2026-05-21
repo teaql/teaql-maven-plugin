@@ -46,11 +46,11 @@ public class GenWorkspaceMojo extends AbstractGenerateMojo {
 
     /**
      * Target directory where the workspace ZIP is extracted.
-     * Defaults to {@code <project.basedir>/workspace} when running inside a Maven project,
-     * or {@code ./workspace} otherwise.
+     * Defaults to {@code <project.basedir>/model} when running inside a Maven project,
+     * or {@code ./model} otherwise.
      */
     @Parameter(property = "teaql.workspaceDir",
-               defaultValue = "${project.basedir}/workspace")
+               defaultValue = "${project.basedir}/model")
     private File workspaceDir;
 
     @Override
