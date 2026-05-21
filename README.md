@@ -10,6 +10,7 @@ Maven plugin for TeaQL code generation workflows.
 | `teaql:gen-doc` | `generate-sources` | Generate documentation |
 | `teaql:gen-model` | `generate-sources` | Generate frontend model |
 | `teaql:gen-workspace` | `generate-sources` | Generate a complete workspace skeleton (Gradle + Spring Boot) |
+| `teaql:ping` | — | Verify connectivity to the TeaQL service |
 | `teaql:show-config` | — | Print effective config |
 
 ## Quick start
@@ -67,6 +68,7 @@ Add the plugin to `pom.xml` to generate code during the build:
 mvn teaql:gen-code     -Dteaql.input=src/main/model
 mvn teaql:gen-doc      -Dteaql.input=src/main/model
 mvn teaql:gen-model    -Dteaql.input=src/main/model
+mvn teaql:ping
 mvn teaql:show-config
 ```
 
