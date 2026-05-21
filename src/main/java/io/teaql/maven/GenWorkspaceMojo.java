@@ -83,11 +83,18 @@ public class GenWorkspaceMojo extends AbstractGenerateMojo {
         getLog().info(resolved.describeSources());
         getLog().info("workspace dir  : " + workspaceDir.getAbsolutePath());
 
+        File resolvedInput = resolveInput();
+
         GeneratorService service = new GeneratorService(getLog());
         try {
-            service.generateWorkspace(input, getScope(), resolved, workspaceDir);
+            service.generateWorkspace(resolvedInput, getScope(), resolved, workspaceDir);
         } catch (Exception e) {
             throw new MojoExecutionException("TeaQL workspace generation failed: " + e.getMessage(), e);
+        } finally {
+            // Clean up temp demo model if we created one
+            if (input == null && resolvedInput.exists()) {
+                resolvedInput.delete();
+            }
         }
     }
 }

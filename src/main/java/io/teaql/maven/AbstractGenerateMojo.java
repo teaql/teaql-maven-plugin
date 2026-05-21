@@ -6,8 +6,8 @@ import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Base Mojo for all TeaQL generation goals.
@@ -17,8 +17,8 @@ import java.io.IOException;
  */
 public abstract class AbstractGenerateMojo extends AbstractMojo {
 
-    /** Model file or directory to upload. */
-    @Parameter(property = "teaql.input", required = true)
+    /** Model file or directory to upload. Falls back to the built-in demo model. */
+    @Parameter(property = "teaql.input", required = false)
     protected File input;
 
     /** Override the TeaQL endpoint prefix, e.g. {@code https://api.teaql.io/latest/}. */
@@ -51,12 +51,41 @@ public abstract class AbstractGenerateMojo extends AbstractMojo {
      * Returns the {@code scope} parameter for the remote service.
      *
      * <ul>
-     *   <li>{@code null}        → gen-code (backend/domain code)</li>
-     *   <li>{@code "doc"}       → gen-doc</li>
-     *   <li>{@code "frontend"}  → gen-model</li>
+     *   <li>{@code null}            → gen-code (backend/domain code)</li>
+     *   <li>{@code "doc"}           → gen-doc</li>
+     *   <li>{@code "frontend"}      → gen-model</li>
+     *   <li>{@code "java-workspace"}→ gen-workspace</li>
      * </ul>
      */
     protected abstract String getScope();
+
+    /**
+     * Resolves the model input. If no input was provided, extracts the built-in
+     * {@code demo-service.xml} to a temp file.
+     */
+    protected File resolveInput() throws MojoExecutionException {
+        if (input != null) {
+            return input;
+        }
+        getLog().info("no input provided, using built-in demo model");
+        try (InputStream in = getClass().getResourceAsStream("/assets/demo-service.xml")) {
+            if (in == null) {
+                throw new MojoExecutionException(
+                        "bundled demo-service.xml not found in plugin classpath");
+            }
+            File temp = File.createTempFile("teaql-demo-", ".xml");
+            try (OutputStream out = new FileOutputStream(temp)) {
+                byte[] buf = new byte[4096];
+                int n;
+                while ((n = in.read(buf)) != -1) {
+                    out.write(buf, 0, n);
+                }
+            }
+            return temp;
+        } catch (IOException e) {
+            throw new MojoExecutionException("failed to load built-in demo model", e);
+        }
+    }
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
@@ -84,11 +113,18 @@ public abstract class AbstractGenerateMojo extends AbstractMojo {
         // Print where each config value came from
         getLog().info(resolved.describeSources());
 
+        File resolvedInput = resolveInput();
+
         GeneratorService service = new GeneratorService(getLog());
         try {
-            service.generate(input, getScope(), resolved);
+            service.generate(resolvedInput, getScope(), resolved);
         } catch (Exception e) {
             throw new MojoExecutionException("TeaQL generation failed: " + e.getMessage(), e);
+        } finally {
+            // Clean up temp demo model if we created one
+            if (input == null && resolvedInput.exists()) {
+                resolvedInput.delete();
+            }
         }
     }
 }
