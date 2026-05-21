@@ -51,7 +51,7 @@ public abstract class AbstractGenerateMojo extends AbstractMojo {
      * Returns the {@code scope} parameter for the remote service.
      *
      * <ul>
-     *   <li>{@code null}            → gen-code (backend/domain code)</li>
+     *   <li>{@code null}            → gen-lib (backend/domain library code)</li>
      *   <li>{@code "doc"}           → gen-doc</li>
      *   <li>{@code "frontend"}      → gen-model</li>
      *   <li>{@code "java-workspace"}→ gen-workspace</li>

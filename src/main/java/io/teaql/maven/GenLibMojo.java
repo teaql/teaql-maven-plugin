@@ -4,9 +4,9 @@ import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 
 /**
- * Generates backend / domain code.
+ * Generates backend / domain library code.
  *
- * <p>Equivalent to {@code cargo-teaql gen-code} — sends no {@code scope} parameter to the
+ * <p>Equivalent to {@code cargo-teaql gen-lib} — sends no {@code scope} parameter to the
  * TeaQL service.
  *
  * <pre>{@code
@@ -16,7 +16,7 @@ import org.apache.maven.plugins.annotations.Mojo;
  *   <version>0.1.0</version>
  *   <executions>
  *     <execution>
- *       <goals><goal>gen-code</goal></goals>
+ *       <goals><goal>gen-lib</goal></goals>
  *       <configuration>
  *         <input>${project.basedir}/model</input>
  *       </configuration>
@@ -26,16 +26,16 @@ import org.apache.maven.plugins.annotations.Mojo;
  * }</pre>
  *
  * <p>Or run directly:
- * <pre>mvn teaql:gen-code -Dteaql.input=model</pre>
+ * <pre>mvn teaql:gen-lib -Dteaql.input=model</pre>
  */
-@Mojo(name = "gen-code",
+@Mojo(name = "gen-lib",
       defaultPhase = LifecyclePhase.GENERATE_SOURCES,
       requiresProject = false,
       threadSafe = true)
-public class GenCodeMojo extends AbstractGenerateMojo {
+public class GenLibMojo extends AbstractGenerateMojo {
 
     @Override
     protected String getScope() {
-        return null; // no scope → backend/domain code
+        return null; // no scope → backend/domain library code
     }
 }

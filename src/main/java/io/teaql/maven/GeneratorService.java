@@ -50,7 +50,7 @@ public class GeneratorService {
      * Run the generation pipeline.
      *
      * @param input  model file or directory
-     * @param scope  {@code null} → gen-code, {@code "doc"} → gen-doc,
+     * @param scope  {@code null} → gen-lib, {@code "doc"} → gen-doc,
      *               {@code "frontend"} → gen-model
      * @param config resolved configuration
      */

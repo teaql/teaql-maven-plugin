@@ -6,7 +6,7 @@ Maven plugin for TeaQL code generation workflows.
 
 | Goal | Phase | Description |
 |---|---|---|
-| `teaql:gen-code` | `generate-sources` | Generate backend / domain code |
+| `teaql:gen-lib` | `generate-sources` | Generate backend / domain library code |
 | `teaql:gen-doc` | `generate-sources` | Generate documentation |
 | `teaql:gen-model` | `generate-sources` | Generate frontend model |
 | `teaql:gen-workspace` | `generate-sources` | Generate a complete workspace skeleton (Gradle + Spring Boot) |
@@ -53,7 +53,7 @@ Add the plugin to `pom.xml` to generate code during the build:
   <version>0.1.7</version>
   <executions>
     <execution>
-      <goals><goal>gen-code</goal></goals>
+      <goals><goal>gen-lib</goal></goals>
       <configuration>
         <input>${project.basedir}/model</input>
       </configuration>
@@ -65,7 +65,7 @@ Add the plugin to `pom.xml` to generate code during the build:
 ### 3. On-demand commands
 
 ```bash
-mvn teaql:gen-code     -Dteaql.input=model
+mvn teaql:gen-lib     -Dteaql.input=model
 mvn teaql:gen-doc      -Dteaql.input=model
 mvn teaql:gen-model    -Dteaql.input=model
 mvn teaql:ping
@@ -89,7 +89,7 @@ All parameters can be set via `<configuration>`, `-D` system properties, or envi
 | `input` | `teaql.input` | — | _(optional)_ | Model file or directory to upload |
 | `serviceUrl` | `teaql.serviceUrl` | `TEAQL_SERVICE_URL` | `https://api.teaql.io/latest/` | Service endpoint URL |
 | `licenseFile` | `teaql.licenseFile` | `TEAQL_LICENSE_FILE` | bundled `public.LICENSE` | License file path |
-| `output` | `teaql.output` | `TEAQL_BUILD_DIR` | `${project.basedir}/build` | Output directory (gen-code/doc/model) |
+| `output` | `teaql.output` | `TEAQL_BUILD_DIR` | `${project.basedir}/build` | Output directory (gen-lib/doc/model) |
 | `workspaceDir` | `teaql.workspaceDir` | — | `${project.basedir}/model` | Workspace extraction directory (gen-workspace) |
 | `timeoutSeconds` | `teaql.timeoutSeconds` | `TEAQL_TIMEOUT_SECONDS` | `300` | HTTP timeout in seconds |
 
