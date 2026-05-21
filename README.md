@@ -20,14 +20,14 @@ Maven plugin for TeaQL code generation workflows.
 Generate a ready-to-run Gradle + Spring Boot workspace from your model:
 
 ```bash
-mvn io.teaql:teaql-maven-plugin:0.1.6:gen-workspace \
-  -Dteaql.input=src/main/model
+mvn io.teaql:teaql-maven-plugin:0.1.7:gen-workspace \
+  -Dteaql.input=model
 ```
 
 This downloads and extracts a complete workspace skeleton into `${project.basedir}/model`. You can also specify a custom target directory:
 
 ```bash
-mvn io.teaql:teaql-maven-plugin:0.1.6:gen-workspace \
+mvn io.teaql:teaql-maven-plugin:0.1.7:gen-workspace \
   -Dteaql.input=my-model.xml \
   -Dteaql.workspaceDir=./my-project
 ```
@@ -35,7 +35,7 @@ mvn io.teaql:teaql-maven-plugin:0.1.6:gen-workspace \
 Without `-Dteaql.input`, the built-in demo model is used — handy for a smoke test:
 
 ```bash
-mvn io.teaql:teaql-maven-plugin:0.1.6:gen-workspace
+mvn io.teaql:teaql-maven-plugin:0.1.7:gen-workspace
 # → extracts into ./model
 cd model
 ./gradlew bootRun
@@ -50,12 +50,12 @@ Add the plugin to `pom.xml` to generate code during the build:
 <plugin>
   <groupId>io.teaql</groupId>
   <artifactId>teaql-maven-plugin</artifactId>
-  <version>0.1.6</version>
+  <version>0.1.7</version>
   <executions>
     <execution>
       <goals><goal>gen-code</goal></goals>
       <configuration>
-        <input>${project.basedir}/src/main/model</input>
+        <input>${project.basedir}/model</input>
       </configuration>
     </execution>
   </executions>
@@ -65,9 +65,9 @@ Add the plugin to `pom.xml` to generate code during the build:
 ### 3. On-demand commands
 
 ```bash
-mvn teaql:gen-code     -Dteaql.input=src/main/model
-mvn teaql:gen-doc      -Dteaql.input=src/main/model
-mvn teaql:gen-model    -Dteaql.input=src/main/model
+mvn teaql:gen-code     -Dteaql.input=model
+mvn teaql:gen-doc      -Dteaql.input=model
+mvn teaql:gen-model    -Dteaql.input=model
 mvn teaql:ping
 mvn teaql:show-config
 ```

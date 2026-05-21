@@ -17,7 +17,7 @@ import java.io.IOException;
  *
  * <pre>{@code
  * mvn teaql:gen-workspace \
- *   -Dteaql.input=src/main/model \
+ *   -Dteaql.input=model \
  *   -Dteaql.workspaceDir=/path/to/workspace
  * }</pre>
  *
@@ -30,7 +30,7 @@ import java.io.IOException;
  *     <execution>
  *       <goals><goal>gen-workspace</goal></goals>
  *       <configuration>
- *         <input>${project.basedir}/src/main/model</input>
+ *         <input>${project.basedir}/model</input>
  *         <workspaceDir>${project.basedir}/../my-workspace</workspaceDir>
  *       </configuration>
  *     </execution>

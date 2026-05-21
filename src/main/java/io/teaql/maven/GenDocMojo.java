@@ -8,7 +8,7 @@ import org.apache.maven.plugins.annotations.Mojo;
  *
  * <p>Equivalent to {@code cargo-teaql gen-doc} — sends {@code scope=doc} to the TeaQL service.
  *
- * <pre>mvn teaql:gen-doc -Dteaql.input=src/main/model</pre>
+ * <pre>mvn teaql:gen-doc -Dteaql.input=model</pre>
  */
 @Mojo(name = "gen-doc",
       defaultPhase = LifecyclePhase.GENERATE_SOURCES,

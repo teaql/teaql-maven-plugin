@@ -18,7 +18,7 @@ import org.apache.maven.plugins.annotations.Mojo;
  *     <execution>
  *       <goals><goal>gen-code</goal></goals>
  *       <configuration>
- *         <input>${project.basedir}/src/main/model</input>
+ *         <input>${project.basedir}/model</input>
  *       </configuration>
  *     </execution>
  *   </executions>
@@ -26,7 +26,7 @@ import org.apache.maven.plugins.annotations.Mojo;
  * }</pre>
  *
  * <p>Or run directly:
- * <pre>mvn teaql:gen-code -Dteaql.input=src/main/model</pre>
+ * <pre>mvn teaql:gen-code -Dteaql.input=model</pre>
  */
 @Mojo(name = "gen-code",
       defaultPhase = LifecyclePhase.GENERATE_SOURCES,
