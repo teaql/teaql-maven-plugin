@@ -55,6 +55,35 @@ public class GeneratorService {
      * @param config resolved configuration
      */
     public void generate(File input, String scope, ResolvedConfig config) throws Exception {
+        generateInternal(input, scope, config, config.getBuildDir());
+    }
+
+    /**
+     * Workspace generation pipeline.
+     *
+     * <p>Same as {@link #generate} but extracts the ZIP into {@code workspaceDir}
+     * instead of the build dir, and uses the build dir only for the archive.
+     *
+     * @param input        model file or directory
+     * @param scope        scope value sent to the service (e.g. {@code "java-workspace"})
+     * @param config       resolved configuration
+     * @param workspaceDir target directory for extracted workspace files
+     */
+    public void generateWorkspace(File input, String scope,
+                                  ResolvedConfig config, File workspaceDir) throws Exception {
+        generateInternal(input, scope, config, workspaceDir);
+    }
+
+    /**
+     * Internal generation pipeline shared by {@link #generate} and {@link #generateWorkspace}.
+     *
+     * @param input     model file or directory
+     * @param scope     scope parameter for the remote service
+     * @param config    resolved configuration
+     * @param outputDir directory where the ZIP will be extracted
+     */
+    private void generateInternal(File input, String scope,
+                                  ResolvedConfig config, File outputDir) throws Exception {
         // 1. Validate input
         if (!input.exists()) {
             throw new IllegalArgumentException("input does not exist: " + input.getAbsolutePath());
@@ -68,7 +97,8 @@ public class GeneratorService {
             printDefaultLicenseInfo(license.file);
         }
 
-        // 4. Create build dir
+        // 4. Create output dir (and build dir for archive)
+        Files.createDirectories(outputDir.toPath());
         Files.createDirectories(config.getBuildDir().toPath());
 
         // 5. Prepare upload (zip directory if needed)
@@ -81,22 +111,22 @@ public class GeneratorService {
             log.info("using " + TeaQLService.endpointUrl(config.getEndpointPrefix(), "generate"));
             byte[] zipBytes = requestGeneration(uploadFile, scope, license.file, config);
 
-            // 7. Write archive
+            // 7. Write archive (always into build dir)
             File archivePath = new File(config.getBuildDir(), "domain.zip");
             Files.write(archivePath.toPath(), zipBytes);
 
-            // 8. Extract
-            extractZip(zipBytes, config.getBuildDir());
+            // 8. Extract into outputDir
+            extractZip(zipBytes, outputDir);
 
-            // 9. Check for error.txt
-            File errorFile = new File(config.getBuildDir(), "error.txt");
+            // 9. Check for error.txt (in outputDir)
+            File errorFile = new File(outputDir, "error.txt");
             if (errorFile.exists()) {
                 String errorContent = new String(
                         Files.readAllBytes(errorFile.toPath()), StandardCharsets.UTF_8).trim();
                 throw new RuntimeException("TeaQL service error: " + errorContent);
             }
 
-            log.info("generated output in " + config.getBuildDir().getAbsolutePath());
+            log.info("generated output in " + outputDir.getAbsolutePath());
             log.info("archive saved to " + archivePath.getAbsolutePath());
         } finally {
             // Clean up temp zip if we created one
