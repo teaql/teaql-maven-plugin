@@ -185,14 +185,39 @@ public class GeneratorService {
 
     // ── prepareUpload ────────────────────────────────────────────────────────
 
-    private File prepareUpload(File input) throws IOException {
+    public File prepareUpload(File input) throws IOException {
         if (input.isFile()) {
             return input;
         }
-        // Directory → zip into temp file
-        File temp = File.createTempFile("teaql-upload-", ".zip");
-        zipDirectory(input, temp);
-        return temp;
+
+        File mainXml = new File(input, "main.xml");
+        if (mainXml.exists() && mainXml.isFile()) {
+            File temp = File.createTempFile("teaql-upload-", ".zip");
+            zipDirectory(input, temp);
+            return temp;
+        }
+
+        File[] files = input.listFiles();
+        List<File> modelFiles = new ArrayList<>();
+        if (files != null) {
+            for (File f : files) {
+                if (f.isFile()) {
+                    String name = f.getName().toLowerCase();
+                    if (name.endsWith(".xml") || name.endsWith(".ksml")) {
+                        modelFiles.add(f);
+                    }
+                }
+            }
+        }
+
+        if (modelFiles.size() == 1) {
+            log.info("note: uploading " + modelFiles.get(0).getName() + " directly since no main.xml was found in directory");
+            return modelFiles.get(0);
+        } else if (modelFiles.isEmpty()) {
+            throw new IOException("no model files (.xml or .ksml) found in directory " + input.getAbsolutePath());
+        } else {
+            throw new IOException("multiple model files found in " + input.getAbsolutePath() + " but no main.xml. Please rename your entry point to main.xml");
+        }
     }
 
     // ── requestGeneration ────────────────────────────────────────────────────
