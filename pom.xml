@@ -222,4 +222,17 @@
       <snapshots><enabled>false</enabled></snapshots>
     </pluginRepository>
   </pluginRepositories>
+
+  <distributionManagement>
+    <repository>
+      <id>TEAQL</id>
+      <name>TEAQL Maven releases repository</name>
+      <url>https://nexus.teaql.io/repository/maven-releases/</url>
+    </repository>
+    <snapshotRepository>
+      <id>TEAQL</id>
+      <name>TEAQL Maven snapshots repository</name>
+      <url>https://nexus.teaql.io/repository/maven-snapshots/</url>
+    </snapshotRepository>
+  </distributionManagement>
 </project>
