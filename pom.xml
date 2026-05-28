@@ -181,7 +181,7 @@
         </executions>
       </plugin>
 
-      <!-- Maven Central: GPG signing via pure-Java sign-maven-plugin (no native GPG needed) -->
+      <!-- Maven Central: GPG signing via pure-Java sign-maven-plugin (no native GPG needed)
       <plugin>
         <groupId>org.simplify4u.plugins</groupId>
         <artifactId>sign-maven-plugin</artifactId>
@@ -198,8 +198,9 @@
           </execution>
         </executions>
       </plugin>
+      -->
 
-      <!-- Maven Central: publish via Central Portal -->
+      <!-- Maven Central: publish via Central Portal
       <plugin>
         <groupId>org.sonatype.central</groupId>
         <artifactId>central-publishing-maven-plugin</artifactId>
@@ -211,6 +212,7 @@
           <autoPublish>true</autoPublish>
         </configuration>
       </plugin>
+      -->
     </plugins>
   </build>
 
