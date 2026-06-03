@@ -20,8 +20,6 @@ import java.io.IOException;
       threadSafe = true)
 public class EvalMojo extends AbstractGenerateMojo {
 
-    @Parameter(property = "teaql.eval.format", defaultValue = "text")
-    private String evalFormat;
 
     @Parameter(property = "teaql.eval.output")
     private File evalOutput;
@@ -62,7 +60,7 @@ public class EvalMojo extends AbstractGenerateMojo {
 
         EvaluationService service = new EvaluationService(getLog());
         try {
-            boolean success = service.evaluate(resolvedInput, evalFormat, evalOutput, failOnWarning, resolved);
+            boolean success = service.evaluate(resolvedInput, evalOutput, failOnWarning, resolved);
             if (!success) {
                 throw new MojoFailureException("KSML model evaluation failed (see diagnostics above).");
             }

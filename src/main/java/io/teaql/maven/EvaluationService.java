@@ -35,14 +35,13 @@ public class EvaluationService {
      * Executes the KSML model evaluation.
      *
      * @param input          model file or directory
-     * @param format         output format ("text" or "json")
      * @param outputFile     optional file to write raw JSON report to
      * @param failOnWarning  fail if warnings exist
      * @param config         resolved configuration
      * @return true if evaluation passed, false if it failed (errors exist or failOnWarning triggered)
      */
     @SuppressWarnings("unchecked")
-    public boolean evaluate(File input, String format, File outputFile, boolean failOnWarning, ResolvedConfig config) throws Exception {
+    public boolean evaluate(File input, File outputFile, boolean failOnWarning, ResolvedConfig config) throws Exception {
         if (!input.exists()) {
             log.error("input does not exist: " + input.getAbsolutePath());
             return false;
@@ -120,34 +119,7 @@ public class EvaluationService {
         int warningsCount = warnings != null ? warnings.size() : 0;
         int errorsCount = errors != null ? errors.size() : 0;
 
-        if ("json".equalsIgnoreCase(format)) {
-            System.out.println(responseText);
-        } else {
-            // Text format
-            StringBuilder sb = new StringBuilder();
-            sb.append("\nKSML Evaluation\n\n");
-            sb.append("Solids: ").append(solidsCount).append("\n");
-            sb.append("Warnings: ").append(warningsCount).append("\n");
-            sb.append("Errors: ").append(errorsCount).append("\n");
-
-            if (warningsCount > 0 && warnings != null) {
-                sb.append("\nWarnings\n");
-                for (Map<String, Object> item : warnings) {
-                    sb.append(String.format("- [%s] %s at %s\n", item.get("ruleId"), item.get("title"), item.get("path")));
-                    sb.append("  ").append(item.get("message")).append("\n");
-                }
-            }
-
-            if (errorsCount > 0 && errors != null) {
-                sb.append("\nErrors\n");
-                for (Map<String, Object> item : errors) {
-                    sb.append(String.format("- [%s] %s at %s\n", item.get("ruleId"), item.get("title"), item.get("path")));
-                    sb.append("  ").append(item.get("message")).append("\n");
-                }
-            }
-
-            log.info(sb.toString());
-        }
+        System.out.println(responseText);
 
         if (errorsCount > 0) {
             return false;
