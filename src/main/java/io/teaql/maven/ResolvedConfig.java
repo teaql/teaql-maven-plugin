@@ -11,25 +11,25 @@ import java.io.File;
 public class ResolvedConfig {
 
     private final String endpointPrefix;
-    private final File licenseFile;
+    private final String apiKey;
     private final File buildDir;
     private final long timeoutSeconds;
 
     private final String endpointPrefixSource;
-    private final String licenseSource;
+    private final String apiKeySource;
     private final String buildDirSource;
     private final String timeoutSource;
 
-    public ResolvedConfig(String endpointPrefix, File licenseFile,
+    public ResolvedConfig(String endpointPrefix, String apiKey,
                           File buildDir, long timeoutSeconds,
-                          String endpointPrefixSource, String licenseSource,
+                          String endpointPrefixSource, String apiKeySource,
                           String buildDirSource, String timeoutSource) {
         this.endpointPrefix = endpointPrefix;
-        this.licenseFile = licenseFile;
+        this.apiKey = apiKey;
         this.buildDir = buildDir;
         this.timeoutSeconds = timeoutSeconds;
         this.endpointPrefixSource = endpointPrefixSource;
-        this.licenseSource = licenseSource;
+        this.apiKeySource = apiKeySource;
         this.buildDirSource = buildDirSource;
         this.timeoutSource = timeoutSource;
     }
@@ -40,7 +40,7 @@ public class ResolvedConfig {
     @Deprecated
     public String getServiceUrl() { return endpointPrefix; }
 
-    public File getLicenseFile() { return licenseFile; }
+    public String getApiKey() { return apiKey; }
     public File getBuildDir() { return buildDir; }
     public long getTimeoutSeconds() { return timeoutSeconds; }
 
@@ -52,7 +52,7 @@ public class ResolvedConfig {
         return "\n" +
             "  config (precedence: mojo > env > config.yml > default):\n" +
             "    endpoint_prefix  = " + endpointPrefix + "  (from: " + endpointPrefixSource + ")\n" +
-            "    license_file     = " + licenseFile + "  (from: " + licenseSource + ")\n" +
+            "    api_key          = " + (apiKey != null ? "********" : "null") + "  (from: " + apiKeySource + ")\n" +
             "    build_dir        = " + buildDir + "  (from: " + buildDirSource + ")\n" +
             "    timeout_seconds  = " + timeoutSeconds + "  (from: " + timeoutSource + ")\n";
     }
@@ -61,7 +61,7 @@ public class ResolvedConfig {
     public String toString() {
         return "ResolvedConfig{" +
                 "endpointPrefix='" + endpointPrefix + '\'' +
-                ", licenseFile=" + licenseFile +
+                ", apiKey=" + (apiKey != null ? "'********'" : "null") +
                 ", buildDir=" + buildDir +
                 ", timeoutSeconds=" + timeoutSeconds +
                 '}';

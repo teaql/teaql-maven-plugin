@@ -47,9 +47,9 @@ public class PingMojo extends AbstractMojo {
     @Parameter(property = "teaql.serviceUrl")
     private String serviceUrl;
 
-    /** Override the license file path. */
-    @Parameter(property = "teaql.licenseFile")
-    private String licenseFile;
+    /** Override the API Key. */
+    @Parameter(property = "teaql.apiKey")
+    private String apiKey;
 
     /** Override the request timeout in seconds. */
     @Parameter(property = "teaql.timeoutSeconds", defaultValue = "0")
@@ -72,7 +72,7 @@ public class PingMojo extends AbstractMojo {
         }
 
         ConfigOverrides overrides = new ConfigOverrides(
-                endpointPrefix, serviceUrl, licenseFile,
+                endpointPrefix, serviceUrl, apiKey,
                 System.getProperty("java.io.tmpdir") + "/teaql-ping",
                 timeoutSeconds
         );
@@ -90,7 +90,7 @@ public class PingMojo extends AbstractMojo {
         log("    endpoint_prefix : " + resolved.getEndpointPrefix());
         log("    generate url    : " + generateUrl);
         log("    timeout         : " + resolved.getTimeoutSeconds() + "s");
-        log("    license_file    : " + resolved.getLicenseFile().getAbsolutePath());
+        log("    api_key         : " + (resolved.getApiKey() != null ? "********" : "null"));
         log("    build_dir       : " + resolved.getBuildDir().getAbsolutePath());
 
         // ── [2] Write demo model ─────────────────────────────────────────────
@@ -109,17 +109,7 @@ public class PingMojo extends AbstractMojo {
         log("    size            : " + demoModel.length() + " bytes");
         elapsed(t);
 
-        // ── [3] Resolve license ──────────────────────────────────────────────
-        step(3, "Resolving license file");
-        t = System.currentTimeMillis();
-        File licFile = resolved.getLicenseFile();
-        boolean licenseExists = licFile.exists();
-        log("    license_file    : " + licFile.getAbsolutePath());
-        log("    exists on disk  : " + licenseExists);
-        if (!licenseExists) {
-            log("    \u2192 will use bundled public.LICENSE from plugin classpath");
-        }
-        elapsed(t);
+
 
         // ── [4] Build HTTP client ────────────────────────────────────────────
         step(4, "Building HTTP client");
@@ -132,32 +122,7 @@ public class PingMojo extends AbstractMojo {
                 .build();
         elapsed(t);
 
-        // ── [5] Read license bytes ───────────────────────────────────────────
-        step(5, "Reading license bytes");
-        t = System.currentTimeMillis();
-        byte[] licenseBytes;
-        try {
-            if (licenseExists) {
-                licenseBytes = java.nio.file.Files.readAllBytes(licFile.toPath());
-            } else {
-                try (InputStream in = getClass().getResourceAsStream("/assets/public.LICENSE")) {
-                    if (in == null) {
-                        throw new IOException("bundled public.LICENSE not found in plugin classpath");
-                    }
-                    ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                    byte[] buf = new byte[4096];
-                    int n;
-                    while ((n = in.read(buf)) != -1) {
-                        bos.write(buf, 0, n);
-                    }
-                    licenseBytes = bos.toByteArray();
-                }
-            }
-        } catch (IOException e) {
-            throw new MojoExecutionException("failed to read license", e);
-        }
-        log("    size            : " + licenseBytes.length + " bytes");
-        elapsed(t);
+
 
         // ── [6] POST to service ──────────────────────────────────────────────
         step(6, "Sending request to TeaQL service");
@@ -176,9 +141,11 @@ public class PingMojo extends AbstractMojo {
                 .build()) {
 
             HttpPost post = new HttpPost(generateUrl);
+            if (resolved.getApiKey() != null) {
+                post.setHeader("Authorization", "Bearer " + resolved.getApiKey());
+            }
             post.setEntity(MultipartEntityBuilder.create()
                     .addPart("file", new ByteArrayBody(modelBytes, "demo-service.xml"))
-                    .addPart("licenseFile", new ByteArrayBody(licenseBytes, "public.LICENSE"))
                     .addTextBody("scope", "rust-lib")
                     .build());
 

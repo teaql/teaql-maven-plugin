@@ -30,9 +30,9 @@ public abstract class AbstractGenerateMojo extends AbstractMojo {
     @Parameter(property = "teaql.serviceUrl")
     protected String serviceUrl;
 
-    /** Override the license file path. */
-    @Parameter(property = "teaql.licenseFile")
-    protected String licenseFile;
+    /** Override the API Key. */
+    @Parameter(property = "teaql.apiKey")
+    protected String apiKey;
 
     /** Override the output (build) directory. */
     @Parameter(property = "teaql.output",
@@ -99,7 +99,7 @@ public abstract class AbstractGenerateMojo extends AbstractMojo {
         ConfigOverrides overrides = new ConfigOverrides(
                 endpointPrefix,
                 serviceUrl,
-                licenseFile,
+                apiKey,
                 output,
                 timeoutSeconds
         );

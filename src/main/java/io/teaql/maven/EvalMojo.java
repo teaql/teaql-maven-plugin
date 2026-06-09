@@ -44,7 +44,7 @@ public class EvalMojo extends AbstractGenerateMojo {
         ConfigOverrides overrides = new ConfigOverrides(
                 endpointPrefix,
                 serviceUrl,
-                licenseFile,
+                apiKey,
                 output,
                 timeoutSeconds
         );

@@ -28,17 +28,13 @@ import java.util.zip.ZipOutputStream;
  * <ol>
  *   <li>Validate input and license file exist.</li>
  *   <li>If input is a directory, zip it into a temp file.</li>
- *   <li>POST to {@code service_url} as multipart/form-data with {@code file}, {@code licenseFile},
- *       and optional {@code scope}.</li>
+ *   <li>POST to {@code service_url} as multipart/form-data with {@code file}, optional {@code scope},
+ *       and set {@code Authorization: Bearer <apiKey>} header.</li>
  *   <li>Write response to {@code build/domain.zip} and extract it.</li>
  *   <li>If {@code build/error.txt} exists, throw an exception with its contents.</li>
  * </ol>
  */
 public class GeneratorService {
-
-    /** Fields suppressed when printing the default license banner. */
-    private static final Set<String> SUPPRESSED_LICENSE_FIELDS =
-            new HashSet<>(Arrays.asList("PUBLIC KEY", "SIGNATURE"));
 
     private final Log log;
 
@@ -89,14 +85,6 @@ public class GeneratorService {
             throw new IllegalArgumentException("input does not exist: " + input.getAbsolutePath());
         }
 
-        // 2. Resolve license (may extract bundled resource to temp file)
-        ResolvedLicense license = resolveLicenseFile(config.getLicenseFile());
-
-        // 3. If using the default bundled license, print info + fair-use notice
-        if (license.isDefault) {
-            printDefaultLicenseInfo(license.file);
-        }
-
         // 4. Create output dir (and build dir for archive)
         Files.createDirectories(outputDir.toPath());
         Files.createDirectories(config.getBuildDir().toPath());
@@ -109,7 +97,7 @@ public class GeneratorService {
         try {
             // 6. Call remote service
             log.info("using " + TeaQLService.endpointUrl(config.getEndpointPrefix(), "generate"));
-            byte[] zipBytes = requestGeneration(uploadFile, scope, license.file, config);
+            byte[] zipBytes = requestGeneration(uploadFile, scope, config.getApiKey(), config);
 
             // 7. Write archive (always into build dir)
             File archivePath = new File(config.getBuildDir(), "domain.zip");
@@ -133,55 +121,10 @@ public class GeneratorService {
             if (uploadFile != input) {
                 uploadFile.delete();
             }
-            // Clean up extracted bundled license temp file
-            if (license.isDefault) {
-                license.file.delete();
-            }
         }
     }
 
-    // ── default license info ─────────────────────────────────────────────────
 
-    /**
-     * Parse the default license JSON and print all user-visible fields,
-     * then emit a fair-use reminder.
-     */
-    @SuppressWarnings("unchecked")
-    private void printDefaultLicenseInfo(File licenseFile) {
-        try {
-            String content = new String(Files.readAllBytes(licenseFile.toPath()),
-                    StandardCharsets.UTF_8);
-            // SnakeYAML parses JSON natively (JSON is valid YAML)
-            Yaml yaml = new Yaml();
-            Map<String, Object> fields = yaml.load(content);
-
-            StringBuilder sb = new StringBuilder();
-            sb.append("\n");
-            sb.append("┌─────────────────────────────────────────────────┐\n");
-            sb.append("│              TeaQL License (default)            │\n");
-            sb.append("├─────────────────────────────────────────────────┤\n");
-            if (fields != null) {
-                for (Map.Entry<String, Object> entry : fields.entrySet()) {
-                    if (SUPPRESSED_LICENSE_FIELDS.contains(entry.getKey())) {
-                        continue;
-                    }
-                    sb.append(String.format("│  %-18s : %-27s│\n",
-                            entry.getKey(), String.valueOf(entry.getValue())));
-                }
-            }
-            sb.append("├─────────────────────────────────────────────────┤\n");
-            sb.append("│  ⚠  Fair Use Notice                             │\n");
-            sb.append("│  You are using the public free-tier license.    │\n");
-            sb.append("│  Configure a personal license via:              │\n");
-            sb.append("│    ~/.teaql/config.yml  →  license_file: ...    │\n");
-            sb.append("│  or pass  -Dteaql.licenseFile=<path>            │\n");
-            sb.append("└─────────────────────────────────────────────────┘\n");
-
-            log.warn(sb.toString());
-        } catch (Exception e) {
-            log.warn("could not read default license file: " + e.getMessage());
-        }
-    }
 
     // ── prepareUpload ────────────────────────────────────────────────────────
 
@@ -223,7 +166,7 @@ public class GeneratorService {
     // ── requestGeneration ────────────────────────────────────────────────────
 
     private byte[] requestGeneration(File uploadFile, String scope,
-                                     File licenseFile, ResolvedConfig config) throws IOException {
+                                     String apiKey, ResolvedConfig config) throws IOException {
         int timeoutMs = (int) (config.getTimeoutSeconds() * 1000L);
         RequestConfig requestConfig = RequestConfig.custom()
                 .setConnectTimeout(timeoutMs)
@@ -239,7 +182,9 @@ public class GeneratorService {
 
             MultipartEntityBuilder builder = MultipartEntityBuilder.create();
             builder.addPart("file", new FileBody(uploadFile));
-            builder.addPart("licenseFile", new FileBody(licenseFile));
+            if (apiKey != null) {
+                post.setHeader("Authorization", "Bearer " + apiKey);
+            }
             if (scope != null) {
                 builder.addTextBody("scope", scope,
                         org.apache.http.entity.ContentType.TEXT_PLAIN);
@@ -325,51 +270,5 @@ public class GeneratorService {
         }
     }
 
-    // ── license resolution ───────────────────────────────────────────────────
 
-    /**
-     * Resolves the license file to use.
-     *
-     * <ul>
-     *   <li>If the configured path exists on disk → use it directly ({@code isDefault=false}).</li>
-     *   <li>Otherwise → extract the bundled classpath resource to a temp file
-     *       ({@code isDefault=true}).</li>
-     * </ul>
-     */
-    private ResolvedLicense resolveLicenseFile(File configured) throws IOException {
-        if (configured != null && configured.exists()) {
-            return new ResolvedLicense(configured, false);
-        }
-
-        // Fall back to bundled classpath resource
-        InputStream resource = getClass().getResourceAsStream("/assets/public.LICENSE");
-        if (resource == null) {
-            throw new FileNotFoundException(
-                    "bundled public.LICENSE not found in plugin classpath, "
-                    + "and configured license file does not exist: " + configured);
-        }
-        File temp = File.createTempFile("teaql-license-", ".LICENSE");
-        // Do NOT deleteOnExit here — we delete it ourselves in the finally block of generate()
-        try (InputStream in = resource;
-             OutputStream out = new FileOutputStream(temp)) {
-            byte[] buf = new byte[4096];
-            int n;
-            while ((n = in.read(buf)) != -1) {
-                out.write(buf, 0, n);
-            }
-        }
-        return new ResolvedLicense(temp, true);
-    }
-
-    // ── inner types ──────────────────────────────────────────────────────────
-
-    private static final class ResolvedLicense {
-        final File file;
-        final boolean isDefault;
-
-        ResolvedLicense(File file, boolean isDefault) {
-            this.file = file;
-            this.isDefault = isDefault;
-        }
-    }
 }

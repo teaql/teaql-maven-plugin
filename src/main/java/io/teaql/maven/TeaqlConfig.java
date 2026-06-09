@@ -29,7 +29,7 @@ public class TeaqlConfig {
 
     /** Stored as the raw value from config file; normalised during {@link #resolve}. */
     private String endpointPrefix = DEFAULT_ENDPOINT_PREFIX;
-    private String licenseFile;          // null → fall back to bundled public.LICENSE
+    private String apiKey;
     private String buildDir = DEFAULT_BUILD_DIR;
     private long timeoutSeconds = DEFAULT_TIMEOUT_SECONDS;
 
@@ -63,8 +63,8 @@ public class TeaqlConfig {
             } else if (data.containsKey("service_url") && data.get("service_url") != null) {
                 cfg.endpointPrefix = data.get("service_url").toString();
             }
-            if (data.containsKey("license_file") && data.get("license_file") != null) {
-                cfg.licenseFile = data.get("license_file").toString();
+            if (data.containsKey("api_key") && data.get("api_key") != null) {
+                cfg.apiKey = data.get("api_key").toString();
             }
             if (data.containsKey("build_dir") && data.get("build_dir") != null) {
                 cfg.buildDir = data.get("build_dir").toString();
@@ -85,8 +85,8 @@ public class TeaqlConfig {
 
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("endpoint_prefix", endpointPrefix);
-        if (licenseFile != null) {
-            data.put("license_file", licenseFile);
+        if (apiKey != null) {
+            data.put("api_key", apiKey);
         }
         data.put("build_dir", buildDir);
         data.put("timeout_seconds", timeoutSeconds);
@@ -111,7 +111,7 @@ public class TeaqlConfig {
      * <ul>
      *   <li>{@code TEAQL_ENDPOINT_PREFIX} – endpoint prefix (preferred)</li>
      *   <li>{@code TEAQL_SERVICE_URL} – legacy alias for endpoint prefix</li>
-     *   <li>{@code TEAQL_LICENSE_FILE}</li>
+     *   <li>{@code TEAQL_API_KEY}</li>
      *   <li>{@code TEAQL_BUILD_DIR}</li>
      *   <li>{@code TEAQL_TIMEOUT_SECONDS}</li>
      * </ul>
@@ -144,22 +144,22 @@ public class TeaqlConfig {
             endpointPrefixSource = "~/.teaql/config.yml (or built-in default)";
         }
 
-        // ── license_file: mojo/env > config.yml > default ──
-        File resolvedLicenseFile;
-        String licenseSource;
-        String envLicense = System.getenv("TEAQL_LICENSE_FILE");
-        if (overrides.getLicenseFile() != null) {
-            resolvedLicenseFile = normalizePath(overrides.getLicenseFile(), cwd);
-            licenseSource = "mojo parameter (-Dteaql.licenseFile)";
-        } else if (envLicense != null && !envLicense.isBlank()) {
-            resolvedLicenseFile = normalizePath(envLicense, cwd);
-            licenseSource = "env TEAQL_LICENSE_FILE";
-        } else if (licenseFile != null) {
-            resolvedLicenseFile = normalizePath(licenseFile, cwd);
-            licenseSource = "~/.teaql/config.yml";
+        // ── api_key: mojo/env > config.yml > default ──
+        String resolvedApiKey;
+        String apiKeySource;
+        String envApiKey = System.getenv("TEAQL_API_KEY");
+        if (overrides.getApiKey() != null) {
+            resolvedApiKey = overrides.getApiKey();
+            apiKeySource = "mojo parameter (-Dteaql.apiKey)";
+        } else if (envApiKey != null && !envApiKey.isBlank()) {
+            resolvedApiKey = envApiKey;
+            apiKeySource = "env TEAQL_API_KEY";
+        } else if (apiKey != null) {
+            resolvedApiKey = apiKey;
+            apiKeySource = "~/.teaql/config.yml";
         } else {
-            resolvedLicenseFile = defaultLicensePath();
-            licenseSource = "built-in default";
+            resolvedApiKey = "PLEASE_SET_YOUR_API_KEY";
+            apiKeySource = "built-in default placeholder";
         }
 
         // ── build_dir: mojo/env > config.yml > default ──
@@ -197,9 +197,9 @@ public class TeaqlConfig {
             timeoutSource = "~/.teaql/config.yml (or built-in default)";
         }
 
-        return new ResolvedConfig(resolvedEndpointPrefix, resolvedLicenseFile,
+        return new ResolvedConfig(resolvedEndpointPrefix, resolvedApiKey,
                 resolvedBuildDir, resolvedTimeout,
-                endpointPrefixSource, licenseSource, buildDirSource, timeoutSource);
+                endpointPrefixSource, apiKeySource, buildDirSource, timeoutSource);
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────
@@ -237,13 +237,7 @@ public class TeaqlConfig {
         return prefix + m;
     }
 
-    /**
-     * Path to the bundled {@code public.LICENSE} that ships inside the plugin jar.
-     * At runtime, this file is extracted to a temp location by {@link GeneratorService}.
-     */
-    public static File defaultLicensePath() {
-        return new File("assets/public.LICENSE");
-    }
+
 
     private static File normalizePath(String rawPath, File cwd) {
         return normalizePath(new File(rawPath), cwd);
@@ -268,8 +262,8 @@ public class TeaqlConfig {
     @Deprecated
     public void setServiceUrl(String serviceUrl) { this.endpointPrefix = serviceUrl; }
 
-    public String getLicenseFile() { return licenseFile; }
-    public void setLicenseFile(String licenseFile) { this.licenseFile = licenseFile; }
+    public String getApiKey() { return apiKey; }
+    public void setApiKey(String apiKey) { this.apiKey = apiKey; }
 
     public String getBuildDir() { return buildDir; }
     public void setBuildDir(String buildDir) { this.buildDir = buildDir; }
@@ -281,7 +275,7 @@ public class TeaqlConfig {
     public String toString() {
         return "TeaqlConfig{" +
                 "endpointPrefix='" + endpointPrefix + '\'' +
-                ", licenseFile='" + licenseFile + '\'' +
+                ", apiKey='" + (apiKey != null ? "********" : "null") + '\'' +
                 ", buildDir='" + buildDir + '\'' +
                 ", timeoutSeconds=" + timeoutSeconds +
                 '}';

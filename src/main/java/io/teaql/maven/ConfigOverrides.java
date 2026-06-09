@@ -13,17 +13,17 @@ public class ConfigOverrides {
     /** @deprecated use {@link #endpointPrefix}. Kept for backward compatibility. */
     @Deprecated
     private String serviceUrl;
-    private String licenseFile;
+    private String apiKey;
     private String buildDir;
     private long timeoutSeconds;   // 0 → no override
 
     public ConfigOverrides() {}
 
     public ConfigOverrides(String endpointPrefix, String serviceUrl,
-                           String licenseFile, String buildDir, long timeoutSeconds) {
+                           String apiKey, String buildDir, long timeoutSeconds) {
         this.endpointPrefix = endpointPrefix;
         this.serviceUrl = serviceUrl;
-        this.licenseFile = licenseFile;
+        this.apiKey = apiKey;
         this.buildDir = buildDir;
         this.timeoutSeconds = timeoutSeconds;
     }
@@ -38,8 +38,8 @@ public class ConfigOverrides {
     @Deprecated
     public void setServiceUrl(String serviceUrl) { this.serviceUrl = serviceUrl; }
 
-    public String getLicenseFile() { return licenseFile; }
-    public void setLicenseFile(String licenseFile) { this.licenseFile = licenseFile; }
+    public String getApiKey() { return apiKey; }
+    public void setApiKey(String apiKey) { this.apiKey = apiKey; }
 
     public String getBuildDir() { return buildDir; }
     public void setBuildDir(String buildDir) { this.buildDir = buildDir; }

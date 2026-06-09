@@ -39,7 +39,7 @@ public class ShowConfigMojo extends AbstractMojo {
         // Render as YAML (block style, matching Rust serde_yaml output)
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("endpoint_prefix", config.getEndpointPrefix());
-        data.put("license_file", config.getLicenseFile());
+        data.put("api_key", config.getApiKey());
         data.put("build_dir", config.getBuildDir());
         data.put("timeout_seconds", config.getTimeoutSeconds());
 
