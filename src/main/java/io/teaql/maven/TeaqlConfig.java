@@ -158,7 +158,7 @@ public class TeaqlConfig {
             resolvedApiKey = apiKey;
             apiKeySource = "~/.teaql/config.yml";
         } else {
-            resolvedApiKey = "PLEASE_SET_YOUR_API_KEY";
+            resolvedApiKey = "eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJzdWIiOiJwdWJsaWMtdXNlciIsInBsYW4iOiJmcmVlIiwiZXhwIjoxNzk2NTcyOTY2fQ.4Ed_L1gGnyqQ8tnHrF3ASJDp2Ac0CdM0U6FXnIuubm1shyiAlkOconAGxEDWPNhxsEf2McGbSgoloMXgOzYjKw";
             apiKeySource = "built-in default placeholder";
         }
 
