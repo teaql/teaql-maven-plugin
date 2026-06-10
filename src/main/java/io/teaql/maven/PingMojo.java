@@ -173,13 +173,12 @@ public class PingMojo extends AbstractMojo {
         elapsed(t);
 
         if (statusCode < 200 || statusCode >= 300) {
-            String body = new String(responseBody, StandardCharsets.UTF_8);
-            String firstLine = body.contains("\n") ? body.substring(0, body.indexOf('\n')) : body;
+            String body = new String(responseBody, StandardCharsets.UTF_8).trim();
             log("");
             log("  \u2717  PING FAILED \u2014 service returned HTTP " + statusCode);
-            log("     " + firstLine);
+            log("     " + body);
             log("     total elapsed: " + elapsedMs(totalStart) + "ms");
-            throw new MojoExecutionException("PING FAILED: HTTP " + statusCode);
+            throw new MojoExecutionException("PING FAILED: HTTP " + statusCode + "\n" + body);
         }
 
         // ── [8] Inspect zip ──────────────────────────────────────────────────
