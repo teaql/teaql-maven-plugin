@@ -197,8 +197,8 @@ public class GeneratorService {
                 HttpEntity entity = response.getEntity();
                 byte[] body = EntityUtils.toByteArray(entity);
                 if (statusCode < 200 || statusCode >= 300) {
-                    throw new IOException("service returned HTTP " + statusCode
-                            + " for " + TeaQLService.endpointUrl(config.getEndpointPrefix(), "generate"));
+                    String errorBody = new String(body, java.nio.charset.StandardCharsets.UTF_8).trim();
+                    throw new IOException("service returned error (" + statusCode + "):\n" + errorBody);
                 }
                 return body;
             }
