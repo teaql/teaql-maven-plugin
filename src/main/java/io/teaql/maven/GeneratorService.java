@@ -196,6 +196,21 @@ public class GeneratorService {
                 int statusCode = response.getStatusLine().getStatusCode();
                 HttpEntity entity = response.getEntity();
                 byte[] body = EntityUtils.toByteArray(entity);
+                org.apache.http.Header contentTypeHeader = response.getFirstHeader("Content-Type");
+                String contentType = contentTypeHeader != null ? contentTypeHeader.getValue().toLowerCase() : "";
+                boolean isZip = contentType.contains("zip") || contentType.contains("octet-stream");
+
+                if (!isZip) {
+                    String textBody = new String(body, java.nio.charset.StandardCharsets.UTF_8).trim();
+                    if (statusCode >= 200 && statusCode < 300) {
+                        System.out.println(textBody);
+                        System.exit(0);
+                    } else {
+                        System.err.println(textBody);
+                        throw new IOException("Generation failed due to server validation errors. Check the report above.");
+                    }
+                }
+
                 if (statusCode < 200 || statusCode >= 300) {
                     String errorBody = new String(body, java.nio.charset.StandardCharsets.UTF_8).trim();
                     System.err.println(errorBody);
