@@ -35,7 +35,7 @@ public class EvaluationService {
      * Executes the KSML model evaluation.
      *
      * @param input          model file or directory
-     * @param outputFile     optional file to write raw JSON report to
+     * @param outputFile     optional file to write raw Markdown report to
      * @param failOnWarning  fail if warnings exist
      * @param config         resolved configuration
      * @return true if evaluation passed, false if it failed (errors exist or failOnWarning triggered)
@@ -93,39 +93,23 @@ public class EvaluationService {
             }
         }
 
-        // Write raw JSON output if requested
+        // Write raw Markdown output if requested
         if (outputFile != null) {
             File parent = outputFile.getParentFile();
             if (parent != null) {
                 parent.mkdirs();
             }
             Files.write(outputFile.toPath(), responseText.getBytes(StandardCharsets.UTF_8));
-            log.info("Raw JSON report written to: " + outputFile.getAbsolutePath());
+            log.info("Raw Markdown report written to: " + outputFile.getAbsolutePath());
         }
-
-        // Parse JSON using SnakeYAML
-        Yaml yaml = new Yaml();
-        Map<String, Object> evalRes = yaml.load(responseText);
-        if (evalRes == null) {
-            log.error("failed to parse evaluation response: empty response");
-            return false;
-        }
-
-        List<Map<String, Object>> solids = (List<Map<String, Object>>) evalRes.getOrDefault("solids", Collections.emptyList());
-        List<Map<String, Object>> warnings = (List<Map<String, Object>>) evalRes.getOrDefault("warnings", Collections.emptyList());
-        List<Map<String, Object>> errors = (List<Map<String, Object>>) evalRes.getOrDefault("errors", Collections.emptyList());
-
-        int solidsCount = solids != null ? solids.size() : 0;
-        int warningsCount = warnings != null ? warnings.size() : 0;
-        int errorsCount = errors != null ? errors.size() : 0;
 
         System.out.println(responseText);
 
-        if (errorsCount > 0) {
+        if (responseText.contains("## ❌ Errors")) {
             return false;
         }
 
-        if (warningsCount > 0 && failOnWarning) {
+        if (responseText.contains("## ⚠️ Warnings") && failOnWarning) {
             log.error("Evaluation failed due to warnings and failOnWarning=true.");
             return false;
         }
