@@ -198,7 +198,8 @@ public class GeneratorService {
                 byte[] body = EntityUtils.toByteArray(entity);
                 if (statusCode < 200 || statusCode >= 300) {
                     String errorBody = new String(body, java.nio.charset.StandardCharsets.UTF_8).trim();
-                    throw new IOException("service returned error (" + statusCode + "):\n" + errorBody);
+                    System.err.println(errorBody);
+                    throw new IOException("Generation failed due to server validation errors. Check the Markdown report above.");
                 }
                 return body;
             }
