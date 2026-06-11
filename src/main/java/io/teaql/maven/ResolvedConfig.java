@@ -52,11 +52,11 @@ public class ResolvedConfig {
         StringBuilder sb = new StringBuilder();
         sb.append("\n  config (precedence: mojo > env > config.yml > default):\n");
         sb.append("    endpoint_prefix  = ").append(endpointPrefix).append("  (from: ").append(endpointPrefixSource).append(")\n");
-        sb.append("    api_key          = ").append(apiKey != null && !apiKey.equals("PLEASE_SET_YOUR_API_KEY") ? "********" : "PLEASE_SET_YOUR_API_KEY").append("  (from: ").append(apiKeySource).append(")\n");
+        sb.append("    api_key          = ").append(apiKey != null ? "********" : "null").append("  (from: ").append(apiKeySource).append(")\n");
         sb.append("    build_dir        = ").append(buildDir).append("  (from: ").append(buildDirSource).append(")\n");
         sb.append("    timeout_seconds  = ").append(timeoutSeconds).append("  (from: ").append(timeoutSource).append(")\n");
         
-        if (apiKey != null && !apiKey.equals("PLEASE_SET_YOUR_API_KEY")) {
+        if (apiKey != null) {
             String[] parts = apiKey.split("\\.");
             if (parts.length == 3) {
                 try {

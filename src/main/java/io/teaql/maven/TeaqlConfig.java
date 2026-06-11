@@ -158,8 +158,8 @@ public class TeaqlConfig {
             resolvedApiKey = apiKey;
             apiKeySource = "~/.teaql/config.yml";
         } else {
-            resolvedApiKey = "eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJzdWIiOiJwdWJsaWMtdXNlciIsInBsYW4iOiJmcmVlIiwiZXhwIjoxNzk2NTcyOTY2fQ.4Ed_L1gGnyqQ8tnHrF3ASJDp2Ac0CdM0U6FXnIuubm1shyiAlkOconAGxEDWPNhxsEf2McGbSgoloMXgOzYjKw";
-            apiKeySource = "built-in default placeholder";
+            resolvedApiKey = "eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJzdWIiOiJkZWZhdWx0LXVzZXIiLCJwbGFuIjoiZnJlZSIsImV4cCI6MTc5NjcxNDU0NH0.Dc7PQbvOBIm0U1hZhj9KGsXKrTaQTpEvacbZdWBBwVoqe2H1yqi4DQD6AeXeETFBo8oFfAnSeGpqY592iYj36Q";
+            apiKeySource = "built-in default OOTB key";
         }
 
         // ── build_dir: mojo/env > config.yml > default ──
