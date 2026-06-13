@@ -36,7 +36,7 @@ public abstract class AbstractGenerateMojo extends AbstractMojo {
 
     /** Override the output (build) directory. */
     @Parameter(property = "teaql.output",
-               defaultValue = "${project.basedir}/build")
+               defaultValue = "generated-lib")
     protected String output;
 
     /** Override the request timeout in seconds. */

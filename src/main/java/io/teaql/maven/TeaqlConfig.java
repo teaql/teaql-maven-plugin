@@ -24,7 +24,7 @@ public class TeaqlConfig {
 
     public static final String DEFAULT_ENDPOINT_PREFIX =
             "https://api.teaql.io/latest/";
-    public static final String DEFAULT_BUILD_DIR = "build";
+    public static final String DEFAULT_BUILD_DIR = "generated-lib";
     public static final long DEFAULT_TIMEOUT_SECONDS = 1200L;
 
     /** Stored as the raw value from config file; normalised during {@link #resolve}. */

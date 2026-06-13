@@ -50,7 +50,7 @@ public class GenWorkspaceMojo extends AbstractGenerateMojo {
      * or {@code ./model} otherwise.
      */
     @Parameter(property = "teaql.workspaceDir",
-               defaultValue = "${project.basedir}/model")
+               defaultValue = "model")
     private File workspaceDir;
 
     @Override
