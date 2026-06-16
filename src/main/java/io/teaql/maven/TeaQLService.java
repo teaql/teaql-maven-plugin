@@ -14,7 +14,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import org.yaml.snakeyaml.Yaml;
 
 /**
  * TeaQL remote service utilities, mirroring {@code service.rs} from the Cargo CLI.
@@ -121,51 +120,7 @@ public class TeaQLService {
             }
         }
 
-        log.info("\n" + formatServicesTable(body));
-    }
-
-    /**
-     * Formats the /services JSON response containing a services array and metadata.
-     */
-    @SuppressWarnings("unchecked")
-    static String formatServicesTable(String json) {
-        Yaml yaml = new Yaml();
-        Map<String, Object> data;
-        try {
-            data = yaml.load(json);
-        } catch (Exception e) {
-            return json; // fallback to raw string if parsing fails
-        }
-
-        StringBuilder sb = new StringBuilder();
-        if (data.containsKey("version")) {
-            sb.append("Server Version: ").append(data.get("version")).append("\n");
-        }
-        if (data.containsKey("updateTime")) {
-            sb.append("Update Time: ").append(data.get("updateTime")).append("\n");
-        }
-        
-        List<Map<String, String>> services = (List<Map<String, String>>) data.get("services");
-        if (services == null || services.isEmpty()) {
-            sb.append("No services found.\n");
-            return sb.toString();
-        }
-
-        int keyWidth = services.stream().map(s -> s.get("name")).mapToInt(String::length).max().orElse(3);
-        keyWidth = Math.max(keyWidth, "Service".length());
-        int valueWidth = services.stream().map(s -> s.get("description")).mapToInt(String::length).max().orElse(11);
-        valueWidth = Math.max(valueWidth, "Description".length());
-
-        String border = "+-" + "-".repeat(keyWidth) + "-+-" + "-".repeat(valueWidth) + "-+";
-        sb.append(border).append("\n");
-        sb.append(String.format("| %-" + keyWidth + "s | %-" + valueWidth + "s |\n", "Service", "Description"));
-        sb.append(border).append("\n");
-        for (Map<String, String> service : services) {
-            sb.append(String.format("| %-" + keyWidth + "s | %-" + valueWidth + "s |\n",
-                    service.get("name"), service.get("description")));
-        }
-        sb.append(border);
-        return sb.toString();
+        log.info("\n" + body);
     }
 
     /**
