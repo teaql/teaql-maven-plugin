@@ -87,6 +87,42 @@ public class TeaQLService {
     }
 
     /**
+     * Calls {@code GET /services} on the configured endpoint and prints the result
+     * as a formatted key-value table containing available services and their descriptions.
+     *
+     * @param config resolved configuration
+     * @throws IOException if the HTTP request fails
+     */
+    public void printServices(ResolvedConfig config) throws IOException {
+        String requestUrl = endpointUrl(config.getEndpointPrefix(), "services");
+        log.info("using " + requestUrl);
+
+        int timeoutMs = (int) (config.getTimeoutSeconds() * 1000L);
+        RequestConfig requestConfig = RequestConfig.custom()
+                .setConnectTimeout(timeoutMs)
+                .setSocketTimeout(timeoutMs)
+                .setConnectionRequestTimeout(timeoutMs)
+                .build();
+
+        String body;
+        try (CloseableHttpClient client = HttpClients.custom()
+                .setDefaultRequestConfig(requestConfig)
+                .build()) {
+            HttpGet get = new HttpGet(requestUrl);
+            try (CloseableHttpResponse response = client.execute(get)) {
+                int statusCode = response.getStatusLine().getStatusCode();
+                body = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+                if (statusCode < 200 || statusCode >= 300) {
+                    throw new IOException("service returned HTTP " + statusCode
+                            + " for " + requestUrl + ": " + body);
+                }
+            }
+        }
+
+        log.info("\n" + formatKeyValueTable(body));
+    }
+
+    /**
      * Formats a flat JSON object as a padded key-value table.
      * Mirrors {@code format_key_value_table()} in {@code service.rs}.
      */
