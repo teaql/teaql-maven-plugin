@@ -9,16 +9,16 @@ import org.apache.maven.plugins.annotations.Parameter;
  * This makes the plugin flexible without needing to hardcode new goals.
  *
  * <p>Run directly:
- * <pre>mvn teaql:gen-service -Dteaql.input=model -Dteaql.service=java-web-spring-boot</pre>
+ * <pre>mvn teaql:generate -Dinput=model -Dservice=java-web-spring-boot</pre>
  */
-@Mojo(name = "gen-service",
+@Mojo(name = "generate",
       defaultPhase = LifecyclePhase.GENERATE_SOURCES,
       requiresProject = false,
       threadSafe = true)
-public class GenServiceMojo extends AbstractGenerateMojo {
+public class GenerateMojo extends AbstractGenerateMojo {
 
     /** The name of the service/scope to invoke. */
-    @Parameter(property = "teaql.service", required = true)
+    @Parameter(property = "service", required = true)
     protected String service;
 
     @Override

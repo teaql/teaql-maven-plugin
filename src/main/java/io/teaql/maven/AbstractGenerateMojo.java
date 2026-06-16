@@ -18,7 +18,7 @@ import java.nio.charset.StandardCharsets;
 public abstract class AbstractGenerateMojo extends AbstractMojo {
 
     /** Model file or directory to upload. Falls back to the built-in demo model. */
-    @Parameter(property = "teaql.input", required = false)
+    @Parameter(property = "input", required = false)
     protected File input;
 
     /** Override the TeaQL endpoint prefix, e.g. {@code https://api.teaql.io/latest/}. */
