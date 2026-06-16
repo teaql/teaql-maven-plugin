@@ -71,7 +71,7 @@ All parameters can be set via `<configuration>`, `-D` system properties, or envi
 |---|---|---|---|---|
 | `service` | `service` | — | — | **(Required)** The target generator service (e.g., `java-app-console`) |
 | `input` | `input` | — | _(optional)_ | Model file or directory to upload |
-| `endpointPrefix` | `teaql.endpointPrefix` | `TEAQL_ENDPOINT_PREFIX` | `http://localhost:8080/` | Service endpoint URL |
+| `endpointPrefix` | `teaql.endpointPrefix` | `TEAQL_ENDPOINT_PREFIX` | `https://api.teaql.io/latest/` | Service endpoint URL |
 | `apiKey` | `teaql.apiKey` | `TEAQL_API_KEY` | `********` | API Key for service access |
 | `output` | `teaql.output` | `TEAQL_BUILD_DIR` | `${project.basedir}/build` | Output directory |
 | `timeoutSeconds` | `teaql.timeoutSeconds` | `TEAQL_TIMEOUT_SECONDS` | `300` | HTTP timeout in seconds |
@@ -81,7 +81,7 @@ All parameters can be set via `<configuration>`, `-D` system properties, or envi
 Local config lives in `~/.teaql/config.yml`:
 
 ```yaml
-endpoint_prefix: http://localhost:8080/
+endpoint_prefix: https://api.teaql.io/latest/
 api_key: YOUR_API_KEY
 build_dir: build
 timeout_seconds: 300
@@ -93,7 +93,7 @@ At startup, the plugin logs where each effective config value came from:
 
 ```
 [INFO]   config (precedence: mojo/env > config.yml > default):
-[INFO]     endpoint_prefix = http://localhost:8080/        (from: ~/.teaql/config.yml (or built-in default))
+[INFO]     endpoint_prefix = https://api.teaql.io/latest/        (from: ~/.teaql/config.yml (or built-in default))
 [INFO]     api_key         = ********                      (from: built-in default)
 [INFO]     build_dir       = /workspace/project/build      (from: mojo parameter (-Dteaql.output))
 [INFO]     timeout_seconds = 300                           (from: ~/.teaql/config.yml (or built-in default))
