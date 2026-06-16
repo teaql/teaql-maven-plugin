@@ -6,12 +6,7 @@ Maven plugin for TeaQL code generation workflows.
 
 | Goal | Phase | Description |
 |---|---|---|
-| `teaql:gen-lib` | `generate-sources` | Generate backend / domain library code |
-| `teaql:gen-doc` | `generate-sources` | Generate documentation |
-| `teaql:gen-model` | `generate-sources` | Generate frontend model |
-| `teaql:gen-workspace` | `generate-sources` | Generate a complete workspace skeleton (Gradle + Spring Boot) |
-| `teaql:gen-service` | `generate-sources` | Generate code for a specific service target |
-| `teaql:list-services` | — | List all available generator services |
+| `teaql:generate` | `generate-sources` | Generate code for a specified dynamic service (e.g. `java-app-console`, `rust-lib-core`) |
 | `teaql:ping` | — | Verify connectivity to the TeaQL service |
 | `teaql:show-config` | — | Print effective config |
 
@@ -19,30 +14,17 @@ Maven plugin for TeaQL code generation workflows.
 
 ### 1. Initialize a new project
 
-Generate a ready-to-run Gradle + Spring Boot workspace from your model:
+Generate a ready-to-run application from your model by specifying a `service` target:
 
 ```bash
-mvn io.teaql:teaql-maven-plugin:1.1.0:gen-workspace \
-  -Dteaql.input=model
+mvn io.teaql:teaql-maven-plugin:1.1.0:generate \
+  -Dservice=java-app-console \
+  -Dinput=model
 ```
 
-This downloads and extracts a complete workspace skeleton into `${project.basedir}/model`. You can also specify a custom target directory:
+This generates code and places it into the configured output directory (defaults to `${project.basedir}/build`).
 
-```bash
-mvn io.teaql:teaql-maven-plugin:1.1.0:gen-workspace \
-  -Dteaql.input=my-model.xml \
-  -Dteaql.workspaceDir=./my-project
-```
-
-Without `-Dteaql.input`, the built-in demo model is used — handy for a smoke test:
-
-```bash
-mvn io.teaql:teaql-maven-plugin:1.1.0:gen-workspace
-# → extracts into ./model
-cd model
-./gradlew bootRun
-# → http://localhost:8080/version
-```
+You can dynamically call any service endpoint defined by your remote TeaQL generator, meaning the Maven plugin never needs an update when a new code generation framework is supported on the backend!
 
 ### 2. Use in a project
 
@@ -55,8 +37,9 @@ Add the plugin to `pom.xml` to generate code during the build:
   <version>1.1.0</version>
   <executions>
     <execution>
-      <goals><goal>gen-lib</goal></goals>
+      <goals><goal>generate</goal></goals>
       <configuration>
+        <service>java-app-console</service> <!-- Replace with your target service -->
         <input>${project.basedir}/model</input>
       </configuration>
     </execution>
@@ -67,11 +50,7 @@ Add the plugin to `pom.xml` to generate code during the build:
 ### 3. On-demand commands
 
 ```bash
-mvn teaql:list-services
-mvn teaql:gen-service  -Dteaql.service=java-app-console -Dteaql.input=model
-mvn teaql:gen-lib      -Dteaql.input=model
-mvn teaql:gen-doc      -Dteaql.input=model
-mvn teaql:gen-model    -Dteaql.input=model
+mvn teaql:generate -Dservice=java-app-console -Dinput=model
 mvn teaql:ping
 mvn teaql:show-config
 ```
@@ -90,11 +69,11 @@ All parameters can be set via `<configuration>`, `-D` system properties, or envi
 
 | Parameter | Property | Env var | Default | Description |
 |---|---|---|---|---|
-| `input` | `teaql.input` | — | _(optional)_ | Model file or directory to upload |
-| `serviceUrl` | `teaql.serviceUrl` | `TEAQL_SERVICE_URL` | `https://api.teaql.io/latest/` | Service endpoint URL |
-| `licenseFile` | `teaql.licenseFile` | `TEAQL_LICENSE_FILE` | bundled `public.LICENSE` | License file path |
-| `output` | `teaql.output` | `TEAQL_BUILD_DIR` | `${project.basedir}/build` | Output directory (gen-lib/doc/model) |
-| `workspaceDir` | `teaql.workspaceDir` | — | `${project.basedir}/model` | Workspace extraction directory (gen-workspace) |
+| `service` | `service` | — | — | **(Required)** The target generator service (e.g., `java-app-console`) |
+| `input` | `input` | — | _(optional)_ | Model file or directory to upload |
+| `endpointPrefix` | `teaql.endpointPrefix` | `TEAQL_ENDPOINT_PREFIX` | `http://localhost:8080/` | Service endpoint URL |
+| `apiKey` | `teaql.apiKey` | `TEAQL_API_KEY` | `********` | API Key for service access |
+| `output` | `teaql.output` | `TEAQL_BUILD_DIR` | `${project.basedir}/build` | Output directory |
 | `timeoutSeconds` | `teaql.timeoutSeconds` | `TEAQL_TIMEOUT_SECONDS` | `300` | HTTP timeout in seconds |
 
 ### Config file
@@ -102,8 +81,8 @@ All parameters can be set via `<configuration>`, `-D` system properties, or envi
 Local config lives in `~/.teaql/config.yml`:
 
 ```yaml
-service_url: https://api.teaql.io/latest/
-license_file: /path/to/your.LICENSE   # optional — bundled public.LICENSE used if omitted
+endpoint_prefix: http://localhost:8080/
+api_key: YOUR_API_KEY
 build_dir: build
 timeout_seconds: 300
 ```
@@ -114,10 +93,10 @@ At startup, the plugin logs where each effective config value came from:
 
 ```
 [INFO]   config (precedence: mojo/env > config.yml > default):
-[INFO]     service_url     = https://api.teaql.io/latest/  (from: ~/.teaql/config.yml (or built-in default))
-[INFO]     license_file    = /home/user/.teaql/license       (from: env TEAQL_LICENSE_FILE)
-[INFO]     build_dir       = /workspace/project/build        (from: mojo parameter (-Dteaql.output))
-[INFO]     timeout_seconds = 300                             (from: ~/.teaql/config.yml (or built-in default))
+[INFO]     endpoint_prefix = http://localhost:8080/        (from: ~/.teaql/config.yml (or built-in default))
+[INFO]     api_key         = ********                      (from: built-in default)
+[INFO]     build_dir       = /workspace/project/build      (from: mojo parameter (-Dteaql.output))
+[INFO]     timeout_seconds = 300                           (from: ~/.teaql/config.yml (or built-in default))
 ```
 
 ## Build
