@@ -10,6 +10,8 @@ Maven plugin for TeaQL code generation workflows.
 | `teaql:gen-doc` | `generate-sources` | Generate documentation |
 | `teaql:gen-model` | `generate-sources` | Generate frontend model |
 | `teaql:gen-workspace` | `generate-sources` | Generate a complete workspace skeleton (Gradle + Spring Boot) |
+| `teaql:gen-service` | `generate-sources` | Generate code for a specific service target |
+| `teaql:list-services` | — | List all available generator services |
 | `teaql:ping` | — | Verify connectivity to the TeaQL service |
 | `teaql:show-config` | — | Print effective config |
 
@@ -20,14 +22,14 @@ Maven plugin for TeaQL code generation workflows.
 Generate a ready-to-run Gradle + Spring Boot workspace from your model:
 
 ```bash
-mvn io.teaql:teaql-maven-plugin:0.1.8:gen-workspace \
+mvn io.teaql:teaql-maven-plugin:1.1.0:gen-workspace \
   -Dteaql.input=model
 ```
 
 This downloads and extracts a complete workspace skeleton into `${project.basedir}/model`. You can also specify a custom target directory:
 
 ```bash
-mvn io.teaql:teaql-maven-plugin:0.1.8:gen-workspace \
+mvn io.teaql:teaql-maven-plugin:1.1.0:gen-workspace \
   -Dteaql.input=my-model.xml \
   -Dteaql.workspaceDir=./my-project
 ```
@@ -35,7 +37,7 @@ mvn io.teaql:teaql-maven-plugin:0.1.8:gen-workspace \
 Without `-Dteaql.input`, the built-in demo model is used — handy for a smoke test:
 
 ```bash
-mvn io.teaql:teaql-maven-plugin:0.1.8:gen-workspace
+mvn io.teaql:teaql-maven-plugin:1.1.0:gen-workspace
 # → extracts into ./model
 cd model
 ./gradlew bootRun
@@ -50,7 +52,7 @@ Add the plugin to `pom.xml` to generate code during the build:
 <plugin>
   <groupId>io.teaql</groupId>
   <artifactId>teaql-maven-plugin</artifactId>
-  <version>0.1.8</version>
+  <version>1.1.0</version>
   <executions>
     <execution>
       <goals><goal>gen-lib</goal></goals>
@@ -65,7 +67,9 @@ Add the plugin to `pom.xml` to generate code during the build:
 ### 3. On-demand commands
 
 ```bash
-mvn teaql:gen-lib     -Dteaql.input=model
+mvn teaql:list-services
+mvn teaql:gen-service  -Dteaql.service=java-app-console -Dteaql.input=model
+mvn teaql:gen-lib      -Dteaql.input=model
 mvn teaql:gen-doc      -Dteaql.input=model
 mvn teaql:gen-model    -Dteaql.input=model
 mvn teaql:ping
