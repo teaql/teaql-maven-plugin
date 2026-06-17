@@ -178,14 +178,19 @@ public class GeneratorService {
                 .setDefaultRequestConfig(requestConfig)
                 .build()) {
 
-            HttpPost post = new HttpPost(TeaQLService.endpointUrl(config.getEndpointPrefix(), "generate"));
+            String requestPath = "generate";
+            if (scope != null && scope.contains("-assist-")) {
+                requestPath = scope;
+            }
+
+            HttpPost post = new HttpPost(TeaQLService.endpointUrl(config.getEndpointPrefix(), requestPath));
 
             MultipartEntityBuilder builder = MultipartEntityBuilder.create();
             builder.addPart("file", new FileBody(uploadFile));
             if (apiKey != null) {
                 post.setHeader("Authorization", "Bearer " + apiKey);
             }
-            if (scope != null) {
+            if (scope != null && !scope.contains("-assist-")) {
                 builder.addTextBody("scope", scope,
                         org.apache.http.entity.ContentType.TEXT_PLAIN);
             }
