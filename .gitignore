@@ -26,3 +26,5 @@ replay_pid*
 # Maven build output
 target/
 signing-key.asc
+
+*.py
