@@ -23,4 +23,6 @@ jobs:
       - name: SpotBugs Check
         run: mvn spotbugs:check
       - name: OWASP Dependency Check
+        env:
+          NVD_API_KEY: 7b40b5fe-0276-4875-a9f8-94fe3d01ad69
         run: mvn org.owasp:dependency-check-maven:check
