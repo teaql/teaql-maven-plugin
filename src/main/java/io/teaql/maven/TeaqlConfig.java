@@ -123,6 +123,7 @@ public class TeaqlConfig {
      * @param cwd       the Maven project's base directory
      * @return a fully-resolved, ready-to-use config
      */
+    @SuppressWarnings("deprecation") // Resolves the documented legacy service_url alias.
     public ResolvedConfig resolve(ConfigOverrides overrides, File cwd) {
         // ── endpoint_prefix: mojo/env > config.yml > default ──
         String resolvedEndpointPrefix;

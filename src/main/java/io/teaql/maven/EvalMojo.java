@@ -33,6 +33,7 @@ public class EvalMojo extends AbstractGenerateMojo {
     }
 
     @Override
+    @SuppressWarnings("deprecation") // Reads the supported legacy teaql.serviceUrl option.
     public void execute() throws MojoExecutionException, MojoFailureException {
         TeaqlConfig fileConfig;
         try {

@@ -147,6 +147,13 @@
         <configuration>
           <source>${java.version}</source>
           <target>${java.version}</target>
+          <showWarnings>true</showWarnings>
+          <compilerArgs>
+            <!-- Maven plugin annotations are consumed by the descriptor plugin,
+                 so javac's "no processor claimed" warning is not actionable. -->
+            <arg>-Xlint:all,-processing</arg>
+            <arg>-Werror</arg>
+          </compilerArgs>
         </configuration>
       </plugin>
 
