@@ -1,5 +1,7 @@
 # teaql-maven-plugin
 
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/13619/badge)](https://www.bestpractices.dev/projects/13619)
+
 Maven plugin for TeaQL code generation workflows.
 
 ## Goals
