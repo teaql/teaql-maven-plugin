@@ -248,7 +248,9 @@ public class PingMojo extends AbstractMojo {
         log("");
 
         // Cleanup
-        modelFile.delete();
+        if (!modelFile.delete()) {
+            getLog().warn("Failed to delete temp demo model: " + modelFile.getAbsolutePath());
+        }
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────
@@ -282,7 +284,7 @@ public class PingMojo extends AbstractMojo {
      * Loads the bundled demo-service.xml from the plugin classpath.
      */
     private String loadBundledDemoModel() throws MojoExecutionException {
-        try (InputStream in = getClass().getResourceAsStream("/assets/demo-service.xml")) {
+        try (InputStream in = PingMojo.class.getResourceAsStream("/assets/demo-service.xml")) {
             if (in == null) {
                 throw new MojoExecutionException(
                         "bundled demo-service.xml not found in plugin classpath");

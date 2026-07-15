@@ -60,7 +60,7 @@ public class ResolvedConfig {
             String[] parts = apiKey.split("\\.");
             if (parts.length == 3) {
                 try {
-                    String payload = new String(java.util.Base64.getUrlDecoder().decode(parts[1]));
+                    String payload = new String(java.util.Base64.getUrlDecoder().decode(parts[1]), java.nio.charset.StandardCharsets.UTF_8);
                     String sub = extract(payload, "\"sub\":\"([^\"]+)\"");
                     String plan = extract(payload, "\"plan\":\"([^\"]+)\"");
                     String expStr = extract(payload, "\"exp\":(\\d+)");
@@ -87,7 +87,7 @@ public class ResolvedConfig {
                     sb.append("    subject = ").append(sub != null ? sub : "unknown").append("\n");
                     sb.append("    plan    = ").append(plan != null ? plan : "unknown").append("\n");
                     sb.append("    expires = ").append(formattedExp).append("\n");
-                } catch (Exception e) {
+                } catch (IllegalArgumentException e) {
                     sb.append("\n  api_key permissions: [Could not parse token]\n");
                 }
             }

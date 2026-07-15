@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <Match>
+        <Class name="~io\.teaql\.teaql_maven_plugin\.HelpMojo.*"/>
+    </Match>
+</FindBugsFilter>

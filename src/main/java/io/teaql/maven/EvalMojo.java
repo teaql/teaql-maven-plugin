@@ -71,7 +71,9 @@ public class EvalMojo extends AbstractGenerateMojo {
         } finally {
             // Clean up temp demo model if we created one
             if (input == null && resolvedInput.exists()) {
-                resolvedInput.delete();
+                if (!resolvedInput.delete()) {
+                    getLog().warn("Failed to delete temp demo model: " + resolvedInput.getAbsolutePath());
+                }
             }
         }
     }

@@ -119,7 +119,9 @@ public class GeneratorService {
         } finally {
             // Clean up temp zip if we created one
             if (uploadFile != input) {
-                uploadFile.delete();
+                if (!uploadFile.delete()) {
+                    log.warn("Failed to delete temp upload file: " + uploadFile.getAbsolutePath());
+                }
             }
         }
     }
@@ -145,7 +147,7 @@ public class GeneratorService {
         if (files != null) {
             for (File f : files) {
                 if (f.isFile()) {
-                    String name = f.getName().toLowerCase();
+                    String name = f.getName().toLowerCase(Locale.ROOT);
                     if (name.endsWith(".xml") || name.endsWith(".ksml")) {
                         modelFiles.add(f);
                     }
@@ -202,14 +204,14 @@ public class GeneratorService {
                 HttpEntity entity = response.getEntity();
                 byte[] body = EntityUtils.toByteArray(entity);
                 org.apache.http.Header contentTypeHeader = response.getFirstHeader("Content-Type");
-                String contentType = contentTypeHeader != null ? contentTypeHeader.getValue().toLowerCase() : "";
+                String contentType = contentTypeHeader != null ? contentTypeHeader.getValue().toLowerCase(Locale.ROOT) : "";
                 boolean isZip = contentType.contains("zip") || contentType.contains("octet-stream");
 
                 if (!isZip) {
                     String textBody = new String(body, java.nio.charset.StandardCharsets.UTF_8).trim();
                     if (statusCode >= 200 && statusCode < 300) {
                         System.out.println(textBody);
-                        System.exit(0);
+                        throw new IOException("Generation output text (not a zip archive). Execution complete.");
                     } else {
                         System.err.println(textBody);
                         throw new IOException("Generation failed due to server validation errors. Check the report above.");
@@ -241,9 +243,14 @@ public class GeneratorService {
                 }
 
                 if (entry.isDirectory()) {
-                    outFile.mkdirs();
+                    if (!outFile.exists() && !outFile.mkdirs()) {
+                        log.warn("Failed to create directory: " + outFile.getAbsolutePath());
+                    }
                 } else {
-                    outFile.getParentFile().mkdirs();
+                    File parent = outFile.getParentFile();
+                    if (parent != null && !parent.exists() && !parent.mkdirs()) {
+                        log.warn("Failed to create parent directory for: " + outFile.getAbsolutePath());
+                    }
                     try (OutputStream os = new FileOutputStream(outFile)) {
                         byte[] buf = new byte[8192];
                         int len;
@@ -264,32 +271,39 @@ public class GeneratorService {
         try (ZipOutputStream zos = new ZipOutputStream(
                 new BufferedOutputStream(new FileOutputStream(destZip)))) {
 
-            Files.walkFileTree(dirPath, new SimpleFileVisitor<Path>() {
-                @Override
-                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
-                        throws IOException {
-                    Path relative = dirPath.relativize(file);
-                    String entryName = relative.toString().replace('\\', '/');
-                    zos.putNextEntry(new ZipEntry(entryName));
-                    Files.copy(file, zos);
-                    zos.closeEntry();
-                    return FileVisitResult.CONTINUE;
-                }
-
-                @Override
-                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
-                        throws IOException {
-                    Path relative = dirPath.relativize(dir);
-                    if (!relative.toString().isEmpty()) {
-                        String dirEntry = relative.toString().replace('\\', '/') + "/";
-                        zos.putNextEntry(new ZipEntry(dirEntry));
-                        zos.closeEntry();
-                    }
-                    return FileVisitResult.CONTINUE;
-                }
-            });
+            Files.walkFileTree(dirPath, new ZipDirectoryVisitor(dirPath, zos));
         }
     }
 
+    private static class ZipDirectoryVisitor extends SimpleFileVisitor<Path> {
+        private final Path dirPath;
+        private final ZipOutputStream zos;
+
+        public ZipDirectoryVisitor(Path dirPath, ZipOutputStream zos) {
+            this.dirPath = dirPath;
+            this.zos = zos;
+        }
+
+        @Override
+        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+            Path relative = dirPath.relativize(file);
+            String entryName = relative.toString().replace('\\', '/');
+            zos.putNextEntry(new ZipEntry(entryName));
+            Files.copy(file, zos);
+            zos.closeEntry();
+            return FileVisitResult.CONTINUE;
+        }
+
+        @Override
+        public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+            Path relative = dirPath.relativize(dir);
+            if (!relative.toString().isEmpty()) {
+                String dirEntry = relative.toString().replace('\\', '/') + "/";
+                zos.putNextEntry(new ZipEntry(dirEntry));
+                zos.closeEntry();
+            }
+            return FileVisitResult.CONTINUE;
+        }
+    }
 
 }

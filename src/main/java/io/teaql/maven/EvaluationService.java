@@ -89,7 +89,9 @@ public class EvaluationService {
             }
         } finally {
             if (uploadFile != input) {
-                uploadFile.delete();
+                if (!uploadFile.delete()) {
+                    log.warn("Failed to delete temp upload file: " + uploadFile.getAbsolutePath());
+                }
             }
         }
 
@@ -97,7 +99,9 @@ public class EvaluationService {
         if (outputFile != null) {
             File parent = outputFile.getParentFile();
             if (parent != null) {
-                parent.mkdirs();
+                if (!parent.exists() && !parent.mkdirs()) {
+                    log.warn("Failed to create parent directories for: " + outputFile.getAbsolutePath());
+                }
             }
             Files.write(outputFile.toPath(), responseText.getBytes(StandardCharsets.UTF_8));
             log.info("Raw Markdown report written to: " + outputFile.getAbsolutePath());

@@ -50,7 +50,7 @@ public class TeaqlConfig {
             return new TeaqlConfig();
         }
 
-        try (FileReader reader = new FileReader(configFile)) {
+        try (java.io.InputStreamReader reader = new java.io.InputStreamReader(new java.io.FileInputStream(configFile), java.nio.charset.StandardCharsets.UTF_8)) {
             Yaml yaml = new Yaml();
             Map<String, Object> data = yaml.load(reader);
             if (data == null) {
@@ -81,7 +81,10 @@ public class TeaqlConfig {
      */
     public void save() throws IOException {
         File configFile = configFilePath();
-        configFile.getParentFile().mkdirs();
+        File parent = configFile.getParentFile();
+        if (parent != null && !parent.exists() && !parent.mkdirs()) {
+            System.err.println("Failed to create config directory: " + parent.getAbsolutePath());
+        }
 
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("endpoint_prefix", endpointPrefix);
@@ -95,7 +98,7 @@ public class TeaqlConfig {
         opts.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
         opts.setPrettyFlow(true);
         Yaml yaml = new Yaml(opts);
-        try (FileWriter writer = new FileWriter(configFile)) {
+        try (java.io.OutputStreamWriter writer = new java.io.OutputStreamWriter(new java.io.FileOutputStream(configFile), java.nio.charset.StandardCharsets.UTF_8)) {
             yaml.dump(data, writer);
         }
     }
@@ -205,9 +208,9 @@ public class TeaqlConfig {
     // ── helpers ──────────────────────────────────────────────────────────────
 
     public static File configFilePath() {
-        String home = System.getenv("HOME");
-        if (home == null) {
-            home = System.getProperty("user.home");
+        String home = System.getProperty("user.home");
+        if (home == null || home.isBlank()) {
+            home = ".";
         }
         return Paths.get(home, ".teaql", "config.yml").toFile();
     }

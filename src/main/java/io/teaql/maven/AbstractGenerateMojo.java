@@ -68,7 +68,7 @@ public abstract class AbstractGenerateMojo extends AbstractMojo {
             return input;
         }
         getLog().info("no input provided, using built-in demo model");
-        try (InputStream in = getClass().getResourceAsStream("/assets/demo-service.xml")) {
+        try (InputStream in = AbstractGenerateMojo.class.getResourceAsStream("/assets/demo-service.xml")) {
             if (in == null) {
                 throw new MojoExecutionException(
                         "bundled demo-service.xml not found in plugin classpath");
@@ -123,7 +123,9 @@ public abstract class AbstractGenerateMojo extends AbstractMojo {
         } finally {
             // Clean up temp demo model if we created one
             if (input == null && resolvedInput.exists()) {
-                resolvedInput.delete();
+                if (!resolvedInput.delete()) {
+                    getLog().warn("Failed to delete temp demo model: " + resolvedInput.getAbsolutePath());
+                }
             }
         }
     }
