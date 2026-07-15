@@ -37,6 +37,11 @@
     </developer>
   </developers>
 
+  <issueManagement>
+    <system>GitHub Issues</system>
+    <url>https://github.com/teaql/teaql-maven-plugin/issues</url>
+  </issueManagement>
+
   <properties>
     <java.version>17</java.version>
     <maven.compiler.source>${java.version}</maven.compiler.source>
@@ -149,6 +154,46 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <version>3.2.5</version>
+      </plugin>
+
+      <plugin>
+        <groupId>com.github.spotbugs</groupId>
+        <artifactId>spotbugs-maven-plugin</artifactId>
+        <version>4.8.6.6</version>
+        <configuration>
+          <effort>Max</effort>
+          <threshold>Low</threshold>
+          <failOnError>true</failOnError>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.owasp</groupId>
+        <artifactId>dependency-check-maven</artifactId>
+        <version>10.0.4</version>
+        <configuration>
+          <ossindexAnalyzerEnabled>false</ossindexAnalyzerEnabled>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>0.8.11</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>report</id>
+            <phase>test</phase>
+            <goals>
+              <goal>report</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
 
       <!-- Maven Central: source jar -->
