@@ -49,7 +49,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.version>3.9.6</maven.version>
     <maven-plugin-annotations.version>3.13.1</maven-plugin-annotations.version>
-    <snakeyaml.version>2.3</snakeyaml.version>
+    <snakeyaml.version>2.6</snakeyaml.version>
     <httpclient.version>4.5.14</httpclient.version>
     <httpmime.version>4.5.14</httpmime.version>
   </properties>
