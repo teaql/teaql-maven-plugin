@@ -7,7 +7,7 @@
 
   <groupId>io.teaql</groupId>
   <artifactId>teaql-maven-plugin</artifactId>
-  <version>1.1.0</version>
+  <version>1.1.1</version>
   <packaging>maven-plugin</packaging>
 
   <name>teaql-maven-plugin</name>
@@ -145,8 +145,7 @@
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.13.0</version>
         <configuration>
-          <source>${java.version}</source>
-          <target>${java.version}</target>
+          <release>${java.version}</release>
           <showWarnings>true</showWarnings>
           <compilerArgs>
             <!-- Maven plugin annotations are consumed by the descriptor plugin,

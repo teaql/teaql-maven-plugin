@@ -70,4 +70,42 @@ class TeaqlConfigTest {
         assertFalse(sources.contains(secret));
         assertFalse(summary.contains(secret));
     }
+
+    @Test
+    void defaultTimeoutIs300Seconds() {
+        assertEquals(300L, TeaqlConfig.DEFAULT_TIMEOUT_SECONDS);
+        TeaqlConfig config = new TeaqlConfig();
+        assertEquals(300L, config.getTimeoutSeconds());
+    }
+
+    @Test
+    void zipDirectoryExcludesNonXmlOrKsmlFiles() throws Exception {
+        File tempDir = new File("target/test-model-dir");
+        tempDir.mkdirs();
+        File mainXml = new File(tempDir, "main.xml");
+        File childKsml = new File(tempDir, "child.ksml");
+        File garbageTxt = new File(tempDir, "garbage.txt");
+        File garbagePng = new File(tempDir, "image.png");
+        java.nio.file.Files.write(mainXml.toPath(), "<root/>".getBytes());
+        java.nio.file.Files.write(childKsml.toPath(), "<child/>".getBytes());
+        java.nio.file.Files.write(garbageTxt.toPath(), "test".getBytes());
+        java.nio.file.Files.write(garbagePng.toPath(), new byte[]{1, 2, 3});
+
+        GeneratorService genService = new GeneratorService(null);
+        File zipFile = genService.prepareUpload(tempDir);
+
+        java.util.Set<String> entries = new java.util.HashSet<>();
+        try (java.util.zip.ZipInputStream zis = new java.util.zip.ZipInputStream(new java.io.FileInputStream(zipFile))) {
+            java.util.zip.ZipEntry entry;
+            while ((entry = zis.getNextEntry()) != null) {
+                entries.add(entry.getName());
+                zis.closeEntry();
+            }
+        }
+
+        assertTrue(entries.contains("main.xml"));
+        assertTrue(entries.contains("child.ksml"));
+        assertFalse(entries.contains("garbage.txt"));
+        assertFalse(entries.contains("image.png"));
+    }
 }

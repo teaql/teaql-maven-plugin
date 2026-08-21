@@ -286,6 +286,13 @@ public class GeneratorService {
 
         @Override
         public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+            Path fileName = file.getFileName();
+            if (fileName != null) {
+                String name = fileName.toString().toLowerCase(Locale.ROOT);
+                if (!name.endsWith(".xml") && !name.endsWith(".ksml")) {
+                    return FileVisitResult.CONTINUE;
+                }
+            }
             Path relative = dirPath.relativize(file);
             String entryName = relative.toString().replace('\\', '/');
             zos.putNextEntry(new ZipEntry(entryName));
