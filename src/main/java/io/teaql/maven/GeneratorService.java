@@ -146,17 +146,16 @@ public class GeneratorService {
         List<File> modelFiles = new ArrayList<>();
         if (files != null) {
             for (File f : files) {
-                if (f.isFile()) {
-                    String name = f.getName().toLowerCase(Locale.ROOT);
-                    if (name.endsWith(".xml") || name.endsWith(".ksml")) {
-                        modelFiles.add(f);
-                    }
+                if (f.isFile() && isModelFile(f.getName())) {
+                    modelFiles.add(f);
                 }
             }
         }
 
         if (modelFiles.size() == 1) {
-            log.info("note: uploading " + modelFiles.get(0).getName() + " directly since no main.xml was found in directory");
+            if (log != null) {
+                log.info("note: uploading " + modelFiles.get(0).getName() + " directly since no main.xml was found in directory");
+            }
             return modelFiles.get(0);
         } else if (modelFiles.isEmpty()) {
             throw new IOException("no model files (.xml or .ksml) found in directory " + input.getAbsolutePath());
@@ -268,33 +267,96 @@ public class GeneratorService {
 
     private void zipDirectory(File directory, File destZip) throws IOException {
         Path dirPath = directory.toPath();
+        Set<String> allowedFiles = resolveAllowedFiles(directory);
         try (ZipOutputStream zos = new ZipOutputStream(
                 new BufferedOutputStream(new FileOutputStream(destZip)))) {
 
-            Files.walkFileTree(dirPath, new ZipDirectoryVisitor(dirPath, zos));
+            Files.walkFileTree(dirPath, new ZipDirectoryVisitor(dirPath, zos, allowedFiles));
         }
+    }
+
+    /**
+     * If {@code main.xml} exists in the directory, recursively resolve all files
+     * referenced via {@code <_include file="..." />} directives.
+     *
+     * @return the set of allowed relative paths, or {@code null} to fall back
+     *         to extension-based filtering
+     */
+    static Set<String> resolveAllowedFiles(File directory) throws IOException {
+        File mainXml = new File(directory, "main.xml");
+        if (!mainXml.exists() || !mainXml.isFile()) {
+            return null;
+        }
+
+        Set<String> allowed = new LinkedHashSet<>();
+        Deque<String> queue = new ArrayDeque<>();
+        queue.add("main.xml");
+
+        while (!queue.isEmpty()) {
+            String fileName = queue.poll();
+            if (allowed.contains(fileName)) {
+                continue;
+            }
+            allowed.add(fileName);
+
+            File file = new File(directory, fileName);
+            if (!file.isFile()) {
+                continue;
+            }
+            List<String> lines = Files.readAllLines(file.toPath(), StandardCharsets.UTF_8);
+            for (String line : lines) {
+                int start = line.indexOf("<_include file=\"");
+                if (start < 0) {
+                    continue;
+                }
+                String rest = line.substring(start + 16);
+                int end = rest.indexOf('"');
+                if (end > 0) {
+                    String included = rest.substring(0, end);
+                    if (!allowed.contains(included)) {
+                        queue.add(included);
+                    }
+                }
+            }
+        }
+        return allowed;
+    }
+
+    /** Extension whitelist used when no {@code main.xml} dependency graph is available. */
+    static boolean isModelFile(String fileName) {
+        String lower = fileName.toLowerCase(Locale.ROOT);
+        return lower.endsWith(".xml") || lower.endsWith(".ksml");
     }
 
     private static class ZipDirectoryVisitor extends SimpleFileVisitor<Path> {
         private final Path dirPath;
         private final ZipOutputStream zos;
+        /** {@code null} means fall back to extension-based filtering. */
+        private final Set<String> allowedFiles;
 
-        public ZipDirectoryVisitor(Path dirPath, ZipOutputStream zos) {
+        public ZipDirectoryVisitor(Path dirPath, ZipOutputStream zos, Set<String> allowedFiles) {
             this.dirPath = dirPath;
             this.zos = zos;
+            this.allowedFiles = allowedFiles;
         }
 
         @Override
         public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-            Path fileName = file.getFileName();
-            if (fileName != null) {
-                String name = fileName.toString().toLowerCase(Locale.ROOT);
-                if (!name.endsWith(".xml") && !name.endsWith(".ksml")) {
+            Path relative = dirPath.relativize(file);
+            String entryName = relative.toString().replace('\\', '/');
+
+            if (allowedFiles != null) {
+                // main.xml dependency graph mode: only include referenced files
+                if (!allowedFiles.contains(entryName)) {
+                    return FileVisitResult.CONTINUE;
+                }
+            } else {
+                // Fallback: extension whitelist
+                if (!isModelFile(entryName)) {
                     return FileVisitResult.CONTINUE;
                 }
             }
-            Path relative = dirPath.relativize(file);
-            String entryName = relative.toString().replace('\\', '/');
+
             zos.putNextEntry(new ZipEntry(entryName));
             Files.copy(file, zos);
             zos.closeEntry();
